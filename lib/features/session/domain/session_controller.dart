@@ -147,4 +147,17 @@ class SessionController extends StateNotifier<SessionState> {
       (p) => p.id == state.selectedProjectId,
     );
   }
+
+  void createProject(String name) {
+  final newProject = PrayerProject(
+    id: const Uuid().v4(),
+    name: name,
+    sessions: [],
+  );
+
+  state = state.copyWith(
+    projects: [...state.projects, newProject],
+  );
+}
+
 }
