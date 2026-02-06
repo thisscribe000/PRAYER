@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'widgets/progress_ring.dart';
 
 import '../../../core/theme/theme_mode_provider.dart';
 import '../domain/session_controller.dart';
@@ -72,35 +73,39 @@ class PrayNowScreen extends ConsumerWidget {
             const SizedBox(height: 48),
 
             /// Circle Placeholder
-            Container(
+            SizedBox(
               width: 260,
               height: 260,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: theme.dividerColor,
-                  width: 2,
-                ),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text("Elapsed", style: TextStyle(fontSize: 12)),
-                    const SizedBox(height: 8),
-                    Text(
-                      _formatDuration(session.elapsed),
-                      style: const TextStyle(
-                        fontSize: 48,
-                        fontWeight: FontWeight.w600,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  ProgressRing(
+                    elapsed: session.elapsed,
+                    maxDuration: const Duration(minutes: 60),
+                    activeColor: theme.colorScheme.primary,
+                    inactiveColor: theme.dividerColor,
+                  ),
+
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Elapsed", style: TextStyle(fontSize: 12)),
+                      const SizedBox(height: 8),
+                      Text(
+                        _formatDuration(session.elapsed),
+                        style: const TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text("Remaining", style: TextStyle(fontSize: 12)),
-                  ],
-                ),
+                      const SizedBox(height: 8),
+                      const Text("Remaining", style: TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                ],
               ),
             ),
+
 
             const Spacer(),
 

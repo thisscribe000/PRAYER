@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'project_detail_screen.dart';
 import '../../session/domain/session_controller.dart';
 
 class BankScreen extends ConsumerWidget {
@@ -88,9 +88,13 @@ class BankScreen extends ConsumerWidget {
                                   ? const Icon(Icons.check_circle)
                                   : const Icon(Icons.chevron_right),
                               onTap: () {
-                                ref
-                                    .read(sessionProvider.notifier)
-                                    .selectProject(project.id);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ProjectDetailScreen(projectId: project.id),
+                                  ),
+                                );
+
                               },
                             ),
                           );

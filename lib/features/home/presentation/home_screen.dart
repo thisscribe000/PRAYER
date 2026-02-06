@@ -10,6 +10,8 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionProvider);
+    final controller = ref.read(sessionProvider.notifier);
+
     final currentProject = session.projects.firstWhere(
       (p) => p.id == session.selectedProjectId,
       orElse: () => session.projects.first,
@@ -34,30 +36,52 @@ class HomeScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 8),
               const Text(
-                'Today',
+                "Overview",
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                 ),
               ),
+
               const SizedBox(height: 16),
+
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const Text("Today"),
+                      const SizedBox(height: 4),
                       Text(
-                        currentProject.name,
-                        style: const TextStyle(fontSize: 12),
+                        _formatDuration(controller.todayTotal),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                      const SizedBox(height: 6),
+
+                      const SizedBox(height: 16),
+
+                      const Text("This Week"),
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatDuration(controller.weekTotal),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      const Text("Current Project"),
+                      const SizedBox(height: 4),
                       Text(
                         _formatDuration(currentProject.total),
                         style: const TextStyle(
-                          fontSize: 28,
+                          fontSize: 20,
                           fontWeight: FontWeight.w700,
                         ),
                       ),

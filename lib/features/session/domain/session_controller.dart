@@ -1,16 +1,27 @@
 import 'dart:async';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:uuid/uuid.dart';
+import 'package:hive/hive.dart';
 
 final sessionProvider =
     StateNotifierProvider<SessionController, SessionState>(
   (ref) => SessionController(),
 );
 
+class PrayerSession {
+  final Duration duration;
+  final DateTime date;
+
+  PrayerSession({
+    required this.duration,
+    required this.date,
+  });
+}
+
 class PrayerProject {
   final String id;
   final String name;
-  final List<Duration> sessions;
+  final List<PrayerSession> sessions;
 
   PrayerProject({
     required this.id,
@@ -21,14 +32,14 @@ class PrayerProject {
   Duration get total {
     return sessions.fold(
       Duration.zero,
-      (previous, element) => previous + element,
+      (previous, element) => previous + element.duration,
     );
   }
 
   PrayerProject copyWith({
     String? id,
     String? name,
-    List<Duration>? sessions,
+    List<PrayerSession>? sessions,
   }) {
     return PrayerProject(
       id: id ?? this.id,
@@ -73,23 +84,114 @@ class SessionController extends StateNotifier<SessionState> {
           SessionState(
             elapsed: Duration.zero,
             isRunning: false,
-            projects: [
-              PrayerProject(
-                id: const Uuid().v4(),
-                name: "General",
-                sessions: [],
-              ),
-            ],
+            projects: [],
             selectedProjectId: "",
           ),
         ) {
-    // Automatically select the default project
-    state = state.copyWith(
-      selectedProjectId: state.projects.first.id,
-    );
+    _loadProjects();
   }
 
   Timer? _timer;
+
+  // ---------------- ANALYTICS ----------------
+
+  Duration get todayTotal {
+    final now = DateTime.now();
+
+    final todaySessions = state.projects
+        .expand((p) => p.sessions)
+        .where((s) =>
+            s.date.year == now.year &&
+            s.date.month == now.month &&
+            s.date.day == now.day);
+
+    return todaySessions.fold(
+      Duration.zero,
+      (prev, element) => prev + element.duration,
+    );
+  }
+
+  Duration get weekTotal {
+    final now = DateTime.now();
+    final startOfWeek =
+        now.subtract(Duration(days: now.weekday - 1));
+
+    final weekSessions = state.projects
+        .expand((p) => p.sessions)
+        .where((s) => s.date.isAfter(startOfWeek));
+
+    return weekSessions.fold(
+      Duration.zero,
+      (prev, element) => prev + element.duration,
+    );
+  }
+
+  // ---------------- LOAD ----------------
+
+  void _loadProjects() {
+    final box = Hive.box('projectsBox');
+    final saved = box.get('projects');
+
+    if (saved != null) {
+      final List<PrayerProject> loadedProjects =
+          (saved as List).map((e) {
+        final map = Map<String, dynamic>.from(e);
+
+        return PrayerProject(
+          id: map['id'],
+          name: map['name'],
+          sessions: (map['sessions'] as List).map((s) {
+            final sessionMap = Map<String, dynamic>.from(s);
+            return PrayerSession(
+              duration: Duration(seconds: sessionMap['duration']),
+              date: DateTime.parse(sessionMap['date']),
+            );
+          }).toList(),
+        );
+      }).toList();
+
+      state = state.copyWith(
+        projects: loadedProjects,
+        selectedProjectId: loadedProjects.first.id,
+      );
+    } else {
+      final defaultProject = PrayerProject(
+        id: const Uuid().v4(),
+        name: "General",
+        sessions: [],
+      );
+
+      state = state.copyWith(
+        projects: [defaultProject],
+        selectedProjectId: defaultProject.id,
+      );
+
+      _saveProjects();
+    }
+  }
+
+  // ---------------- SAVE ----------------
+
+  void _saveProjects() {
+    final box = Hive.box('projectsBox');
+
+    final serialized = state.projects.map((p) {
+      return {
+        'id': p.id,
+        'name': p.name,
+        'sessions': p.sessions.map((s) {
+          return {
+            'duration': s.duration.inSeconds,
+            'date': s.date.toIso8601String(),
+          };
+        }).toList(),
+      };
+    }).toList();
+
+    box.put('projects', serialized);
+  }
+
+  // ---------------- TIMER ----------------
 
   void start() {
     if (state.isRunning) return;
@@ -122,10 +224,15 @@ class SessionController extends StateNotifier<SessionState> {
       return;
     }
 
+    final newSession = PrayerSession(
+      duration: state.elapsed,
+      date: DateTime.now(),
+    );
+
     final updatedProjects = state.projects.map((project) {
       if (project.id == state.selectedProjectId) {
         return project.copyWith(
-          sessions: [...project.sessions, state.elapsed],
+          sessions: [...project.sessions, newSession],
         );
       }
       return project;
@@ -136,10 +243,45 @@ class SessionController extends StateNotifier<SessionState> {
       elapsed: Duration.zero,
       isRunning: false,
     );
+
+    _saveProjects();
   }
+
+  // ---------------- PROJECT MANAGEMENT ----------------
 
   void selectProject(String id) {
     state = state.copyWith(selectedProjectId: id);
+  }
+
+  void createProject(String name) {
+    final newProject = PrayerProject(
+      id: const Uuid().v4(),
+      name: name,
+      sessions: [],
+    );
+
+    state = state.copyWith(
+      projects: [...state.projects, newProject],
+    );
+
+    _saveProjects();
+  }
+
+  // ✅ NEW METHOD ADDED (nothing removed)
+
+  void deleteProject(String id) {
+    if (state.projects.length <= 1) return;
+
+    final updated = state.projects.where((p) => p.id != id).toList();
+
+    final newSelected = updated.first.id;
+
+    state = state.copyWith(
+      projects: updated,
+      selectedProjectId: newSelected,
+    );
+
+    _saveProjects();
   }
 
   PrayerProject get currentProject {
@@ -147,17 +289,4 @@ class SessionController extends StateNotifier<SessionState> {
       (p) => p.id == state.selectedProjectId,
     );
   }
-
-  void createProject(String name) {
-  final newProject = PrayerProject(
-    id: const Uuid().v4(),
-    name: name,
-    sessions: [],
-  );
-
-  state = state.copyWith(
-    projects: [...state.projects, newProject],
-  );
-}
-
 }
