@@ -21,4 +21,16 @@ class AppTheme {
       ),
     );
   }
+  static ThemeData get dark {
+  final base = ThemeData.dark(useMaterial3: true);
+
+  return base.copyWith(
+    scaffoldBackgroundColor: const Color(0xFF141A26),
+    cardTheme: const CardThemeData(
+      color: Color(0xFF1E2434),
+    ),
+    dividerColor: const Color(0xFF2C3447),
+  );
+}
+
 }
