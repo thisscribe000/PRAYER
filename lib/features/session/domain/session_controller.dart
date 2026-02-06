@@ -1,39 +1,93 @@
 import 'dart:async';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:uuid/uuid.dart';
+
+final sessionProvider =
+    StateNotifierProvider<SessionController, SessionState>(
+  (ref) => SessionController(),
+);
+
+class PrayerProject {
+  final String id;
+  final String name;
+  final List<Duration> sessions;
+
+  PrayerProject({
+    required this.id,
+    required this.name,
+    required this.sessions,
+  });
+
+  Duration get total {
+    return sessions.fold(
+      Duration.zero,
+      (previous, element) => previous + element,
+    );
+  }
+
+  PrayerProject copyWith({
+    String? id,
+    String? name,
+    List<Duration>? sessions,
+  }) {
+    return PrayerProject(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      sessions: sessions ?? this.sessions,
+    );
+  }
+}
 
 class SessionState {
   final Duration elapsed;
   final bool isRunning;
-  final List<Duration> sessions;
+  final List<PrayerProject> projects;
+  final String selectedProjectId;
 
-  const SessionState({
+  SessionState({
     required this.elapsed,
     required this.isRunning,
-    required this.sessions,
+    required this.projects,
+    required this.selectedProjectId,
   });
-
-  Duration get todayTotal => sessions.fold(Duration.zero, (a, b) => a + b);
 
   SessionState copyWith({
     Duration? elapsed,
     bool? isRunning,
-    List<Duration>? sessions,
+    List<PrayerProject>? projects,
+    String? selectedProjectId,
   }) {
     return SessionState(
       elapsed: elapsed ?? this.elapsed,
       isRunning: isRunning ?? this.isRunning,
-      sessions: sessions ?? this.sessions,
+      projects: projects ?? this.projects,
+      selectedProjectId:
+          selectedProjectId ?? this.selectedProjectId,
     );
   }
 }
 
 class SessionController extends StateNotifier<SessionState> {
   SessionController()
-      : super(const SessionState(
-          elapsed: Duration.zero,
-          isRunning: false,
-          sessions: [],
-        ));
+      : super(
+          SessionState(
+            elapsed: Duration.zero,
+            isRunning: false,
+            projects: [
+              PrayerProject(
+                id: const Uuid().v4(),
+                name: "General",
+                sessions: [],
+              ),
+            ],
+            selectedProjectId: "",
+          ),
+        ) {
+    // Automatically select the default project
+    state = state.copyWith(
+      selectedProjectId: state.projects.first.id,
+    );
+  }
 
   Timer? _timer;
 
@@ -42,11 +96,14 @@ class SessionController extends StateNotifier<SessionState> {
 
     state = state.copyWith(isRunning: true);
 
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      state = state.copyWith(
-        elapsed: state.elapsed + const Duration(seconds: 1),
-      );
-    });
+    _timer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) {
+        state = state.copyWith(
+          elapsed: state.elapsed + const Duration(seconds: 1),
+        );
+      },
+    );
   }
 
   void pause() {
@@ -54,30 +111,40 @@ class SessionController extends StateNotifier<SessionState> {
     state = state.copyWith(isRunning: false);
   }
 
-  /// End session: save it + reset timer
-  void reset() {
+  void end() {
     _timer?.cancel();
 
-    if (state.elapsed > Duration.zero) {
+    if (state.elapsed == Duration.zero) {
       state = state.copyWith(
-        sessions: [...state.sessions, state.elapsed],
+        isRunning: false,
+        elapsed: Duration.zero,
       );
+      return;
     }
 
+    final updatedProjects = state.projects.map((project) {
+      if (project.id == state.selectedProjectId) {
+        return project.copyWith(
+          sessions: [...project.sessions, state.elapsed],
+        );
+      }
+      return project;
+    }).toList();
+
     state = state.copyWith(
+      projects: updatedProjects,
       elapsed: Duration.zero,
       isRunning: false,
     );
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
+  void selectProject(String id) {
+    state = state.copyWith(selectedProjectId: id);
+  }
+
+  PrayerProject get currentProject {
+    return state.projects.firstWhere(
+      (p) => p.id == state.selectedProjectId,
+    );
   }
 }
-
-final sessionProvider =
-    StateNotifierProvider<SessionController, SessionState>(
-  (ref) => SessionController(),
-);

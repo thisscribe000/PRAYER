@@ -1,10 +1,59 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class BankScreen extends StatelessWidget {
+import '../../session/domain/session_controller.dart';
+
+class BankScreen extends ConsumerWidget {
   const BankScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const SafeArea(child: Center(child: Text('Prayer Bank (history + totals)')));
+  Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(sessionProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Prayer Bank',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: session.projects.isEmpty
+              ? const Center(child: Text('No projects yet.'))
+              : ListView.separated(
+                  itemCount: session.projects.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final project = session.projects[index];
+                    final isSelected = project.id == session.selectedProjectId;
+
+                    return Card(
+                      child: ListTile(
+                        title: Text(project.name),
+                        subtitle: Text('Total: ${_formatDuration(project.total)}'),
+                        trailing: isSelected
+                            ? const Icon(Icons.check_circle)
+                            : const Icon(Icons.chevron_right),
+                        onTap: () {
+                          // For now: tapping selects the project.
+                          // Later: tap opens project details.
+                          ref.read(sessionProvider.notifier).selectProject(project.id);
+                        },
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ),
+    );
+  }
+
+  String _formatDuration(Duration d) {
+    final hours = d.inHours;
+    final minutes = d.inMinutes.remainder(60);
+    if (hours > 0) return "${hours}h ${minutes}m";
+    return "${minutes}m";
   }
 }

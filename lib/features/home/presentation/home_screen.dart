@@ -10,6 +10,10 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionProvider);
+    final currentProject = session.projects.firstWhere(
+      (p) => p.id == session.selectedProjectId,
+      orElse: () => session.projects.first,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -45,13 +49,13 @@ class HomeScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Prayer time',
-                        style: TextStyle(fontSize: 12),
+                      Text(
+                        currentProject.name,
+                        style: const TextStyle(fontSize: 12),
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        _formatDuration(session.todayTotal),
+                        _formatDuration(currentProject.total),
                         style: const TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w700,

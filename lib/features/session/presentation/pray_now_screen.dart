@@ -35,24 +35,43 @@ class PrayNowScreen extends ConsumerWidget {
         child: Column(
           children: [
             const SizedBox(height: 24),
+
             const Text(
               "PRAYER SESSION",
-              style: TextStyle(
-                fontSize: 12,
-                letterSpacing: 1.2,
-              ),
+              style: TextStyle(fontSize: 12, letterSpacing: 1.2),
             ),
+
             const SizedBox(height: 8),
-            const Text(
-              "Morning Devotion",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+
+            /// 🔽 Project Dropdown
+            DropdownButton<String>(
+              value: session.selectedProjectId,
+              isExpanded: true,
+              underline: const SizedBox(),
+              items: session.projects
+                  .map(
+                    (project) => DropdownMenuItem(
+                      value: project.id,
+                      child: Text(
+                        project.name,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  controller.selectProject(value);
+                }
+              },
             ),
+
             const SizedBox(height: 48),
 
-            /// Circle placeholder (real progress next step)
+            /// Circle Placeholder
             Container(
               width: 260,
               height: 260,
@@ -102,7 +121,13 @@ class PrayNowScreen extends ConsumerWidget {
                         controller.start();
                       }
                     },
-                    child: Text(session.isRunning ? "Pause" : "Resume"),
+                    child: Text(
+                      session.isRunning
+                          ? "Pause"
+                          : session.elapsed == Duration.zero
+                              ? "Start"
+                              : "Resume",
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -115,7 +140,7 @@ class PrayNowScreen extends ConsumerWidget {
                       ),
                     ),
                     onPressed: () {
-                      controller.reset();
+                      controller.end();
                     },
                     child: const Text("End Session"),
                   ),
