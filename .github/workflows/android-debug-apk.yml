@@ -2,7 +2,7 @@ name: Android Debug APK
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "ui-polish-pray-now" ]
   workflow_dispatch:
 
 jobs:
