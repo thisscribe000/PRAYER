@@ -36,12 +36,10 @@ class PrayNowScreen extends ConsumerWidget {
         child: Column(
           children: [
             const SizedBox(height: 24),
-
             const Text(
               "PRAYER SESSION",
               style: TextStyle(fontSize: 12, letterSpacing: 1.2),
             ),
-
             const SizedBox(height: 8),
 
             /// 🔽 Project Dropdown
@@ -72,7 +70,6 @@ class PrayNowScreen extends ConsumerWidget {
 
             const SizedBox(height: 48),
 
-            /// Circle Placeholder
             SizedBox(
               width: 260,
               height: 260,
@@ -81,16 +78,21 @@ class PrayNowScreen extends ConsumerWidget {
                 children: [
                   ProgressRing(
                     elapsed: session.elapsed,
-                    maxDuration: const Duration(minutes: 60),
-                    activeColor: theme.colorScheme.primary,
+                    cycleDuration: const Duration(minutes: 60),
+                    cycleColors: [
+                      theme.colorScheme.primary,
+                      theme.colorScheme.primary.withValues(alpha: 0.85),
+                      theme.colorScheme.primary.withValues(alpha: 0.70),
+                    ],
                     inactiveColor: theme.dividerColor,
                   ),
-
                   Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Text("Elapsed", style: TextStyle(fontSize: 12)),
                       const SizedBox(height: 8),
+
+                      /// ✅ fixed: call the formatter, don't define it here
                       Text(
                         _formatDuration(session.elapsed),
                         style: const TextStyle(
@@ -98,6 +100,7 @@ class PrayNowScreen extends ConsumerWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
+
                       const SizedBox(height: 8),
                       const Text("Remaining", style: TextStyle(fontSize: 12)),
                     ],
@@ -105,10 +108,7 @@ class PrayNowScreen extends ConsumerWidget {
                 ],
               ),
             ),
-
-
             const Spacer(),
-
             Row(
               children: [
                 Expanded(
@@ -158,9 +158,11 @@ class PrayNowScreen extends ConsumerWidget {
     );
   }
 
+  /// ✅ updated: hours always visible
   String _formatDuration(Duration d) {
+    final hours = d.inHours.toString().padLeft(2, '0');
     final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return "$minutes:$seconds";
+    return "$hours:$minutes:$seconds";
   }
 }

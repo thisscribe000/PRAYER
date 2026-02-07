@@ -3,40 +3,49 @@ import 'package:flutter/material.dart';
 
 class ProgressRing extends StatelessWidget {
   final Duration elapsed;
-  final Duration maxDuration;
-  final Color activeColor;
+  final Duration cycleDuration; // 60 minutes
+  final List<Color> cycleColors; // subtle tones (2-3)
   final Color inactiveColor;
 
   const ProgressRing({
     super.key,
     required this.elapsed,
-    required this.maxDuration,
-    required this.activeColor,
+    required this.cycleDuration,
+    required this.cycleColors,
     required this.inactiveColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final progress =
-        (elapsed.inSeconds / maxDuration.inSeconds).clamp(0.0, 1.0);
+    final cycleSeconds = cycleDuration.inSeconds == 0 ? 1 : cycleDuration.inSeconds;
+    final elapsedSeconds = elapsed.inSeconds;
+
+    // How many full 60-min cycles completed
+    final cycleIndex = elapsedSeconds ~/ cycleSeconds;
+
+    // Progress within the current cycle (0..1)
+    final withinCycleSeconds = elapsedSeconds % cycleSeconds;
+    final progress = (withinCycleSeconds / cycleSeconds).clamp(0.0, 1.0);
+
+    // Pick the tone for this cycle (subtle shift)
+    final activeColor = cycleColors[cycleIndex % cycleColors.length];
 
     return CustomPaint(
-      painter: _RingPainter(
+      painter: _ProgressRingPainter(
         progress: progress,
         activeColor: activeColor,
         inactiveColor: inactiveColor,
       ),
-      child: const SizedBox.expand(),
     );
   }
 }
 
-class _RingPainter extends CustomPainter {
+class _ProgressRingPainter extends CustomPainter {
   final double progress;
   final Color activeColor;
   final Color inactiveColor;
 
-  _RingPainter({
+  _ProgressRingPainter({
     required this.progress,
     required this.activeColor,
     required this.inactiveColor,
@@ -44,30 +53,40 @@ class _RingPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const strokeWidth = 6.0;
     final center = size.center(Offset.zero);
-    final radius = (size.width / 2) - strokeWidth;
+    final radius = size.width / 2;
 
-    final backgroundPaint = Paint()
-      ..color = inactiveColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
+    const totalTicks = 60;       // ✅ your choice
+    const tickLength = 10.0;
+    const tickWidth = 2.0;
 
-    final progressPaint = Paint()
-      ..color = activeColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
+    final activeTicks = (totalTicks * progress).floor();
 
-    final rect = Rect.fromCircle(center: center, radius: radius);
+    for (int i = 0; i < totalTicks; i++) {
+      final angle = (2 * pi / totalTicks) * i - pi / 2;
+      final isActive = i < activeTicks;
 
-    canvas.drawArc(rect, -pi / 2, 2 * pi, false, backgroundPaint);
-    canvas.drawArc(rect, -pi / 2, 2 * pi * progress, false, progressPaint);
+      final paint = Paint()
+        ..color = isActive ? activeColor : inactiveColor
+        ..strokeWidth = tickWidth
+        ..strokeCap = StrokeCap.round;
+
+      final outerPoint = Offset(
+        center.dx + radius * cos(angle),
+        center.dy + radius * sin(angle),
+      );
+
+      final innerPoint = Offset(
+        center.dx + (radius - tickLength) * cos(angle),
+        center.dy + (radius - tickLength) * sin(angle),
+      );
+
+      canvas.drawLine(innerPoint, outerPoint, paint);
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _RingPainter oldDelegate) {
+  bool shouldRepaint(covariant _ProgressRingPainter oldDelegate) {
     return oldDelegate.progress != progress ||
         oldDelegate.activeColor != activeColor ||
         oldDelegate.inactiveColor != inactiveColor;
