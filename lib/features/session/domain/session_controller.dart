@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:uuid/uuid.dart';
 import 'package:hive/hive.dart';
 
-final sessionProvider =
-    StateNotifierProvider<SessionController, SessionState>(
+final sessionProvider = StateNotifierProvider<SessionController, SessionState>(
   (ref) => SessionController(),
 );
 
@@ -72,8 +71,7 @@ class SessionState {
       elapsed: elapsed ?? this.elapsed,
       isRunning: isRunning ?? this.isRunning,
       projects: projects ?? this.projects,
-      selectedProjectId:
-          selectedProjectId ?? this.selectedProjectId,
+      selectedProjectId: selectedProjectId ?? this.selectedProjectId,
     );
   }
 }
@@ -84,7 +82,7 @@ class SessionController extends StateNotifier<SessionState> {
           SessionState(
             elapsed: Duration.zero,
             isRunning: false,
-            projects: [],
+            projects: const [],
             selectedProjectId: "",
           ),
         ) {
@@ -113,8 +111,7 @@ class SessionController extends StateNotifier<SessionState> {
 
   Duration get weekTotal {
     final now = DateTime.now();
-    final startOfWeek =
-        now.subtract(Duration(days: now.weekday - 1));
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
 
     final weekSessions = state.projects
         .expand((p) => p.sessions)
@@ -126,6 +123,14 @@ class SessionController extends StateNotifier<SessionState> {
     );
   }
 
+  PrayerProject _defaultProject() {
+    return PrayerProject(
+      id: const Uuid().v4(),
+      name: "General",
+      sessions: [],
+    );
+  }
+
   // ---------------- LOAD ----------------
 
   void _loadProjects() {
@@ -133,39 +138,48 @@ class SessionController extends StateNotifier<SessionState> {
     final saved = box.get('projects');
 
     if (saved != null) {
-      final List<PrayerProject> loadedProjects =
-          (saved as List).map((e) {
-        final map = Map<String, dynamic>.from(e);
+      final loadedProjects = (saved as List)
+          .map((e) {
+            final map = Map<String, dynamic>.from(e);
 
-        return PrayerProject(
-          id: map['id'],
-          name: map['name'],
-          sessions: (map['sessions'] as List).map((s) {
-            final sessionMap = Map<String, dynamic>.from(s);
-            return PrayerSession(
-              duration: Duration(seconds: sessionMap['duration']),
-              date: DateTime.parse(sessionMap['date']),
+            return PrayerProject(
+              id: map['id'],
+              name: map['name'],
+              sessions: (map['sessions'] as List).map((s) {
+                final sessionMap = Map<String, dynamic>.from(s);
+                return PrayerSession(
+                  duration: Duration(seconds: sessionMap['duration']),
+                  date: DateTime.parse(sessionMap['date']),
+                );
+              }).toList(),
             );
-          }).toList(),
+          })
+          .toList();
+
+      // ✅ Safety: if saved list is empty, create default
+      if (loadedProjects.isEmpty) {
+        final d = _defaultProject();
+        state = state.copyWith(
+          projects: [d],
+          selectedProjectId: d.id,
         );
-      }).toList();
+        _saveProjects();
+        return;
+      }
+
+      // ✅ Safety: selectedProjectId must always be valid
+      final selected = loadedProjects.first.id;
 
       state = state.copyWith(
         projects: loadedProjects,
-        selectedProjectId: loadedProjects.first.id,
+        selectedProjectId: selected,
       );
     } else {
-      final defaultProject = PrayerProject(
-        id: const Uuid().v4(),
-        name: "General",
-        sessions: [],
-      );
-
+      final d = _defaultProject();
       state = state.copyWith(
-        projects: [defaultProject],
-        selectedProjectId: defaultProject.id,
+        projects: [d],
+        selectedProjectId: d.id,
       );
-
       _saveProjects();
     }
   }
@@ -217,10 +231,7 @@ class SessionController extends StateNotifier<SessionState> {
     _timer?.cancel();
 
     if (state.elapsed == Duration.zero) {
-      state = state.copyWith(
-        isRunning: false,
-        elapsed: Duration.zero,
-      );
+      state = state.copyWith(isRunning: false, elapsed: Duration.zero);
       return;
     }
 
@@ -250,29 +261,43 @@ class SessionController extends StateNotifier<SessionState> {
   // ---------------- PROJECT MANAGEMENT ----------------
 
   void selectProject(String id) {
+    // ✅ ignore invalid selection
+    final exists = state.projects.any((p) => p.id == id);
+    if (!exists) return;
+
     state = state.copyWith(selectedProjectId: id);
   }
 
   void createProject(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
+
     final newProject = PrayerProject(
       id: const Uuid().v4(),
-      name: name,
+      name: trimmed,
       sessions: [],
     );
 
     state = state.copyWith(
       projects: [...state.projects, newProject],
+      selectedProjectId: newProject.id, // ✅ select new one
     );
 
     _saveProjects();
   }
 
-  // ✅ NEW METHOD ADDED (nothing removed)
-
   void deleteProject(String id) {
     if (state.projects.length <= 1) return;
 
     final updated = state.projects.where((p) => p.id != id).toList();
+
+    // ✅ Safety: ensure at least 1 remains
+    if (updated.isEmpty) {
+      final d = _defaultProject();
+      state = state.copyWith(projects: [d], selectedProjectId: d.id);
+      _saveProjects();
+      return;
+    }
 
     final newSelected = updated.first.id;
 
@@ -287,6 +312,7 @@ class SessionController extends StateNotifier<SessionState> {
   PrayerProject get currentProject {
     return state.projects.firstWhere(
       (p) => p.id == state.selectedProjectId,
+      orElse: () => state.projects.isNotEmpty ? state.projects.first : _defaultProject(),
     );
   }
 }

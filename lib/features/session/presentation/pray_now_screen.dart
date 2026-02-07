@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'widgets/progress_ring.dart';
 
 import '../../../core/theme/theme_mode_provider.dart';
 import '../domain/session_controller.dart';
+import 'widgets/progress_ring.dart';
 
 class PrayNowScreen extends ConsumerWidget {
   const PrayNowScreen({super.key});
@@ -13,6 +13,15 @@ class PrayNowScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final session = ref.watch(sessionProvider);
     final controller = ref.read(sessionProvider.notifier);
+
+    // ✅ Safe current project
+    final hasProjects = session.projects.isNotEmpty;
+    final selectedId = session.selectedProjectId;
+    final selectedIsValid =
+        hasProjects && session.projects.any((p) => p.id == selectedId);
+
+    final dropdownValue =
+        selectedIsValid ? selectedId : (hasProjects ? session.projects.first.id : null);
 
     return Scaffold(
       appBar: AppBar(
@@ -42,31 +51,34 @@ class PrayNowScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
 
-            /// 🔽 Project Dropdown
-            DropdownButton<String>(
-              value: session.selectedProjectId,
-              isExpanded: true,
-              underline: const SizedBox(),
-              items: session.projects
-                  .map(
-                    (project) => DropdownMenuItem(
-                      value: project.id,
-                      child: Text(
-                        project.name,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
+            if (!hasProjects)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Text("Loading…"),
+              )
+            else
+              DropdownButton<String>(
+                value: dropdownValue,
+                isExpanded: true,
+                underline: const SizedBox(),
+                items: session.projects
+                    .map(
+                      (project) => DropdownMenuItem(
+                        value: project.id,
+                        child: Text(
+                          project.name,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  controller.selectProject(value);
-                }
-              },
-            ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) controller.selectProject(value);
+                },
+              ),
 
             const SizedBox(height: 48),
 
@@ -91,8 +103,6 @@ class PrayNowScreen extends ConsumerWidget {
                     children: [
                       const Text("Elapsed", style: TextStyle(fontSize: 12)),
                       const SizedBox(height: 8),
-
-                      /// ✅ fixed: call the formatter, don't define it here
                       Text(
                         _formatDuration(session.elapsed),
                         style: const TextStyle(
@@ -100,7 +110,6 @@ class PrayNowScreen extends ConsumerWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-
                       const SizedBox(height: 8),
                       const Text("Remaining", style: TextStyle(fontSize: 12)),
                     ],
@@ -108,7 +117,9 @@ class PrayNowScreen extends ConsumerWidget {
                 ],
               ),
             ),
+
             const Spacer(),
+
             Row(
               children: [
                 Expanded(
@@ -144,9 +155,7 @@ class PrayNowScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    onPressed: () {
-                      controller.end();
-                    },
+                    onPressed: controller.end,
                     child: const Text("End Session"),
                   ),
                 ),
@@ -158,7 +167,6 @@ class PrayNowScreen extends ConsumerWidget {
     );
   }
 
-  /// ✅ updated: hours always visible
   String _formatDuration(Duration d) {
     final hours = d.inHours.toString().padLeft(2, '0');
     final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');

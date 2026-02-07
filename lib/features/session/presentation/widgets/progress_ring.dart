@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 class ProgressRing extends StatelessWidget {
   final Duration elapsed;
   final Duration cycleDuration; // 60 minutes
-  final List<Color> cycleColors; // subtle tones (2-3)
+  final List<Color> cycleColors; // subtle tones
   final Color inactiveColor;
 
   const ProgressRing({
@@ -17,17 +17,15 @@ class ProgressRing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cycleSeconds = cycleDuration.inSeconds == 0 ? 1 : cycleDuration.inSeconds;
+    final cycleSeconds =
+        cycleDuration.inSeconds == 0 ? 1 : cycleDuration.inSeconds;
     final elapsedSeconds = elapsed.inSeconds;
 
-    // How many full 60-min cycles completed
     final cycleIndex = elapsedSeconds ~/ cycleSeconds;
-
-    // Progress within the current cycle (0..1)
     final withinCycleSeconds = elapsedSeconds % cycleSeconds;
-    final progress = (withinCycleSeconds / cycleSeconds).clamp(0.0, 1.0);
+    final progress =
+        (withinCycleSeconds / cycleSeconds).clamp(0.0, 1.0);
 
-    // Pick the tone for this cycle (subtle shift)
     final activeColor = cycleColors[cycleIndex % cycleColors.length];
 
     return CustomPaint(
@@ -56,7 +54,7 @@ class _ProgressRingPainter extends CustomPainter {
     final center = size.center(Offset.zero);
     final radius = size.width / 2;
 
-    const totalTicks = 60;       // ✅ your choice
+    const totalTicks = 60;
     const tickLength = 10.0;
     const tickWidth = 2.0;
 
