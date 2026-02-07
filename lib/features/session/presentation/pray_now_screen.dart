@@ -14,14 +14,22 @@ class PrayNowScreen extends ConsumerWidget {
     final session = ref.watch(sessionProvider);
     final controller = ref.read(sessionProvider.notifier);
 
-    // Calculate progress for 60-minute session
-    final totalSessionMinutes = 60;
-    final elapsedMinutes = session.elapsed.inMinutes;
-    final progress = elapsedMinutes / totalSessionMinutes;
-    final remainingMinutes = totalSessionMinutes - elapsedMinutes;
+    // ✅ Use Duration for accurate progress + remaining (seconds-level)
+    const totalSession = Duration(minutes: 60);
+    final elapsed = session.elapsed;
+
+    final elapsedSeconds = elapsed.inSeconds;
+    final totalSeconds = totalSession.inSeconds;
+
+    final progress = totalSeconds == 0
+        ? 0.0
+        : (elapsedSeconds / totalSeconds).clamp(0.0, 1.0);
+
+    final remaining = totalSession - elapsed;
+    final safeRemaining = remaining.isNegative ? Duration.zero : remaining;
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface, // Changed from background to surface
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         title: const Text(
           "Pray With Me",
@@ -61,7 +69,7 @@ class PrayNowScreen extends ConsumerWidget {
                       "Current Project",
                       style: TextStyle(
                         fontSize: 14,
-                        color: theme.colorScheme.onSurface.withAlpha(178), // Changed from withOpacity
+                        color: theme.colorScheme.onSurface.withAlpha(178),
                       ),
                     ),
                   ),
@@ -69,9 +77,9 @@ class PrayNowScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Timer Section
             Column(
               children: [
@@ -81,12 +89,12 @@ class PrayNowScreen extends ConsumerWidget {
                     fontSize: 11,
                     letterSpacing: 2.0,
                     fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface.withAlpha(153), // Changed from withOpacity
+                    color: theme.colorScheme.onSurface.withAlpha(153),
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Progress Ring with Time
                 SizedBox(
                   width: 260,
@@ -96,12 +104,12 @@ class PrayNowScreen extends ConsumerWidget {
                     children: [
                       // Progress Ring
                       ProgressRing(
-                        progress: progress.clamp(0.0, 1.0),
+                        progress: progress,
                         color: theme.colorScheme.primary,
-                        backgroundColor: theme.dividerColor.withAlpha(77), // Changed from withOpacity
+                        backgroundColor: theme.dividerColor.withAlpha(77),
                         strokeWidth: 12.0,
                       ),
-                      
+
                       // Time Display
                       Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -111,38 +119,38 @@ class PrayNowScreen extends ConsumerWidget {
                             "Elapsed",
                             style: TextStyle(
                               fontSize: 12,
-                              color: theme.colorScheme.onSurface.withAlpha(153), // Changed from withOpacity
+                              color: theme.colorScheme.onSurface.withAlpha(153),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            _formatDuration(session.elapsed),
+                            _formatDuration(elapsed),
                             style: TextStyle(
                               fontSize: 36,
                               fontWeight: FontWeight.w700,
                               color: theme.colorScheme.primary,
                             ),
                           ),
-                          
+
                           const SizedBox(height: 24),
-                          
+
                           // Remaining Section
                           Text(
                             "Remaining",
                             style: TextStyle(
                               fontSize: 12,
-                              color: theme.colorScheme.onSurface.withAlpha(153), // Changed from withOpacity
+                              color: theme.colorScheme.onSurface.withAlpha(153),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            "${remainingMinutes.toString().padLeft(2, '0')}:00",
+                            _formatDurationMmSs(safeRemaining),
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.onSurface, // Changed from onBackground
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                         ],
@@ -152,9 +160,9 @@ class PrayNowScreen extends ConsumerWidget {
                 ),
               ],
             ),
-            
+
             const Spacer(),
-            
+
             // Control Buttons
             Column(
               children: [
@@ -212,9 +220,9 @@ class PrayNowScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Secondary Buttons Row
                 Row(
                   children: [
@@ -253,7 +261,7 @@ class PrayNowScreen extends ConsumerWidget {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 24),
           ],
         ),
@@ -265,11 +273,17 @@ class PrayNowScreen extends ConsumerWidget {
     final hours = d.inHours.toString().padLeft(2, '0');
     final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    
+
     if (d.inHours > 0) {
       return "$hours:$minutes:$seconds";
     } else {
       return "$minutes:$seconds";
     }
+  }
+
+  String _formatDurationMmSs(Duration d) {
+    final minutes = d.inMinutes.toString().padLeft(2, '0');
+    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return "$minutes:$seconds";
   }
 }

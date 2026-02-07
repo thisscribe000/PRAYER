@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  percent_indicator: ^4.2.3
 
   cupertino_icons: ^1.0.8
   flutter_riverpod: ^3.2.1
