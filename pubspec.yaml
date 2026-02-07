@@ -4,7 +4,7 @@ publish_to: 'none'
 version: 1.0.0+2
 
 environment:
-  sdk: '>=3.3.0 <4.0.0'
+  sdk: '>=3.6.0 <4.0.0'
 
 dependencies:
   flutter:
@@ -17,7 +17,7 @@ dependencies:
   firebase_auth: ^6.1.4
   cloud_firestore: ^6.1.2
   firebase_messaging: ^16.1.1
-  flutter_local_notifications: ^20.0.0
+  flutter_local_notifications: ^19.0.0  # Downgraded from 20.0.0
   timezone: ^0.10.1
   uuid: ^4.4.0
   hive: ^2.2.3
@@ -26,7 +26,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^5.0.0  # Already downgraded
 
 flutter:
   uses-material-design: true
