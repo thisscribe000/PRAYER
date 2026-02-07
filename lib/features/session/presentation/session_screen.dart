@@ -6,8 +6,12 @@ class SessionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Prayer Session')),
-      body: const Center(child: Text('Timer + Save session goes here next.')),
+      appBar: AppBar(
+        title: const Text('Prayer Session'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: const Center(child: Text('This screen is not used. Use PrayNowScreen instead.')),
     );
   }
 }

@@ -14,21 +14,21 @@ class PrayNowScreen extends ConsumerWidget {
     final session = ref.watch(sessionProvider);
     final controller = ref.read(sessionProvider.notifier);
 
-    // ✅ Safe current project
-    final hasProjects = session.projects.isNotEmpty;
-    final selectedId = session.selectedProjectId;
-    final selectedIsValid =
-        hasProjects && session.projects.any((p) => p.id == selectedId);
-
-    final dropdownValue =
-        selectedIsValid ? selectedId : (hasProjects ? session.projects.first.id : null);
+    // Calculate progress for 60-minute session
+    final totalSessionMinutes = 60;
+    final elapsedMinutes = session.elapsed.inMinutes;
+    final progress = elapsedMinutes / totalSessionMinutes;
+    final remainingMinutes = totalSessionMinutes - elapsedMinutes;
 
     return Scaffold(
+      backgroundColor: theme.colorScheme.surface, // Changed from background to surface
       appBar: AppBar(
         title: const Text(
           "Pray With Me",
-          style: TextStyle(fontSize: 14),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.brightness_6_outlined),
@@ -41,126 +41,220 @@ class PrayNowScreen extends ConsumerWidget {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: Column(
           children: [
-            const SizedBox(height: 24),
-            const Text(
-              "PRAYER SESSION",
-              style: TextStyle(fontSize: 12, letterSpacing: 1.2),
-            ),
-            const SizedBox(height: 8),
-
-            if (!hasProjects)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Text("Loading…"),
-              )
-            else
-              DropdownButton<String>(
-                value: dropdownValue,
-                isExpanded: true,
-                underline: const SizedBox(),
-                items: session.projects
-                    .map(
-                      (project) => DropdownMenuItem(
-                        value: project.id,
-                        child: Text(
-                          project.name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) controller.selectProject(value);
-                },
+            // Project dropdown
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: theme.dividerColor),
               ),
-
-            const SizedBox(height: 48),
-
-            SizedBox(
-              width: 260,
-              height: 260,
-              child: Stack(
-                alignment: Alignment.center,
+              child: Row(
                 children: [
-                  ProgressRing(
-                    elapsed: session.elapsed,
-                    cycleDuration: const Duration(minutes: 60),
-                    cycleColors: [
-                      theme.colorScheme.primary,
-                      theme.colorScheme.primary.withValues(alpha: 0.85),
-                      theme.colorScheme.primary.withValues(alpha: 0.70),
-                    ],
-                    inactiveColor: theme.dividerColor,
-                  ),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text("Elapsed", style: TextStyle(fontSize: 12)),
-                      const SizedBox(height: 8),
-                      Text(
-                        _formatDuration(session.elapsed),
-                        style: const TextStyle(
-                          fontSize: 48,
-                          fontWeight: FontWeight.w600,
-                        ),
+                  const Icon(Icons.work_outline, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      "Current Project",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: theme.colorScheme.onSurface.withAlpha(178), // Changed from withOpacity
                       ),
-                      const SizedBox(height: 8),
-                      const Text("Remaining", style: TextStyle(fontSize: 12)),
-                    ],
+                    ),
                   ),
+                  const Icon(Icons.arrow_drop_down, size: 20),
                 ],
               ),
             ),
-
-            const Spacer(),
-
-            Row(
+            
+            const SizedBox(height: 32),
+            
+            // Timer Section
+            Column(
               children: [
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(56),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: () {
-                      if (session.isRunning) {
-                        controller.pause();
-                      } else {
-                        controller.start();
-                      }
-                    },
-                    child: Text(
-                      session.isRunning
-                          ? "Pause"
-                          : session.elapsed == Duration.zero
-                              ? "Start"
-                              : "Resume",
-                    ),
+                Text(
+                  "PRAYER SESSION",
+                  style: TextStyle(
+                    fontSize: 11,
+                    letterSpacing: 2.0,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface.withAlpha(153), // Changed from withOpacity
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(56),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                
+                const SizedBox(height: 24),
+                
+                // Progress Ring with Time
+                SizedBox(
+                  width: 260,
+                  height: 260,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Progress Ring
+                      ProgressRing(
+                        progress: progress.clamp(0.0, 1.0),
+                        color: theme.colorScheme.primary,
+                        backgroundColor: theme.dividerColor.withAlpha(77), // Changed from withOpacity
+                        strokeWidth: 12.0,
                       ),
-                    ),
-                    onPressed: controller.end,
-                    child: const Text("End Session"),
+                      
+                      // Time Display
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Elapsed Section
+                          Text(
+                            "Elapsed",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: theme.colorScheme.onSurface.withAlpha(153), // Changed from withOpacity
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _formatDuration(session.elapsed),
+                            style: TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.w700,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                          
+                          const SizedBox(height: 24),
+                          
+                          // Remaining Section
+                          Text(
+                            "Remaining",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: theme.colorScheme.onSurface.withAlpha(153), // Changed from withOpacity
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            "${remainingMinutes.toString().padLeft(2, '0')}:00",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onSurface, // Changed from onBackground
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
+            
+            const Spacer(),
+            
+            // Control Buttons
+            Column(
+              children: [
+                // Start/End Session Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(56),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: BorderSide(
+                            color: theme.colorScheme.primary,
+                            width: 1.5,
+                          ),
+                        ),
+                        onPressed: () {
+                          if (session.isRunning) {
+                            controller.pause();
+                          } else {
+                            controller.start();
+                          }
+                        },
+                        child: Text(
+                          session.isRunning ? "Pause" : "Start",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: theme.colorScheme.error,
+                          minimumSize: const Size.fromHeight(56),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: controller.end,
+                        child: const Text(
+                          "End Session",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Secondary Buttons Row
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: () {
+                          // Handle Break
+                        },
+                        icon: const Icon(Icons.free_breakfast_outlined, size: 20),
+                        label: const Text("Break"),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: () {
+                          // Handle Clock Out
+                        },
+                        icon: const Icon(Icons.logout_outlined, size: 20),
+                        label: const Text("Clock Out"),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -171,6 +265,11 @@ class PrayNowScreen extends ConsumerWidget {
     final hours = d.inHours.toString().padLeft(2, '0');
     final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return "$hours:$minutes:$seconds";
+    
+    if (d.inHours > 0) {
+      return "$hours:$minutes:$seconds";
+    } else {
+      return "$minutes:$seconds";
+    }
   }
 }
