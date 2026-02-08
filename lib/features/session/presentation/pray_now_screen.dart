@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,7 +14,7 @@ class PrayNowScreen extends ConsumerWidget {
     final session = ref.watch(sessionProvider);
     final controller = ref.read(sessionProvider.notifier);
 
-    // ✅ currentProject is non-nullable in your compiled codebase
+    // ✅ Corrected + clean
     final current = controller.currentProject;
     final selectedAccountName = current.name;
     final savedTotal = current.total;
@@ -95,52 +94,43 @@ class PrayNowScreen extends ConsumerWidget {
                   child: Builder(
                     key: ValueKey(targetRingColor.toARGB32()),
                     builder: (_) {
-                      final rotate =
-                          2 * pi * (elapsedSeconds / max(1, cycleSeconds));
-
-                      return Transform.rotate(
-                        angle: rotate,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            ProgressRing(
-                              progress: progress,
-                              color: targetRingColor,
-                              backgroundColor:
-                                  theme.dividerColor.withAlpha(77),
-                              strokeWidth: 12.0,
-                            ),
-                            Transform.rotate(
-                              angle: -rotate,
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    "Praying Now",
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: theme.colorScheme.onSurface
-                                          .withAlpha(153),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    _formatDurationFlexible(elapsed),
-                                    style: TextStyle(
-                                      fontSize: 40,
-                                      fontWeight: FontWeight.w700,
-                                      color: targetRingColor,
-                                      height: 1.0,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          ProgressRing(
+                            progress: progress,
+                            color: targetRingColor,
+                            backgroundColor:
+                                theme.dividerColor.withAlpha(77),
+                            strokeWidth: 12.0,
+                          ),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "Praying Now",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: theme.colorScheme.onSurface
+                                      .withAlpha(153),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                textAlign: TextAlign.center,
                               ),
-                            ),
-                          ],
-                        ),
+                              const SizedBox(height: 10),
+                              Text(
+                                _formatDurationFlexible(elapsed),
+                                style: TextStyle(
+                                  fontSize: 40,
+                                  fontWeight: FontWeight.w700,
+                                  color: targetRingColor,
+                                  height: 1.0,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ],
                       );
                     },
                   ),
@@ -159,12 +149,12 @@ class PrayNowScreen extends ConsumerWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 4), // ✅ less space
+            const SizedBox(height: 4),
             Text(
               _formatDurationHhMmSs(liveTotal),
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 28, // ✅ bigger
+                fontSize: 28,
                 fontWeight: FontWeight.w800,
                 color: theme.colorScheme.onSurface,
                 height: 1.0,
@@ -176,12 +166,15 @@ class PrayNowScreen extends ConsumerWidget {
             InkWell(
               onTap: dropdownDisabled
                   ? null
-                  : () => _openAccountPicker(context, theme, session, controller),
+                  : () => _openAccountPicker(
+                      context, theme, session, controller),
               child: Opacity(
                 opacity: dropdownDisabled ? 0.6 : 1.0,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 16,
+                  ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surface,
                     borderRadius: BorderRadius.circular(0),
@@ -231,7 +224,8 @@ class PrayNowScreen extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: theme.colorScheme.onSurface.withAlpha(153),
+                  color:
+                      theme.colorScheme.onSurface.withAlpha(153),
                 ),
               ),
             ],
