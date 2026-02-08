@@ -16,6 +16,10 @@ class PrayNowScreen extends ConsumerWidget {
 
     final selectedAccountName = controller.currentProject.name;
 
+    // ✅ Total prayed time for selected project (sum of saved sessions)
+    final totalTimePrayed = controller.currentProject.total;
+
+    // (keep current 60-min ring logic for now — we’ll change this in step #2)
     const totalSession = Duration(minutes: 60);
     final elapsed = session.elapsed;
 
@@ -25,9 +29,6 @@ class PrayNowScreen extends ConsumerWidget {
     final progress = totalSeconds == 0
         ? 0.0
         : (elapsedSeconds / totalSeconds).clamp(0.0, 1.0);
-
-    final remaining = totalSession - elapsed;
-    final safeRemaining = remaining.isNegative ? Duration.zero : remaining;
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -55,7 +56,7 @@ class PrayNowScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ✅ Header = selected account name
+            // Header = selected account name
             Text(
               selectedAccountName,
               textAlign: TextAlign.left,
@@ -85,12 +86,13 @@ class PrayNowScreen extends ConsumerWidget {
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        // ✅ 1) "Elapsed" -> "Praying Now"
                         Text(
-                          "Elapsed",
+                          "Praying Now",
                           style: TextStyle(
                             fontSize: 12,
                             color: theme.colorScheme.onSurface.withAlpha(153),
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -114,19 +116,19 @@ class PrayNowScreen extends ConsumerWidget {
 
             const SizedBox(height: 18),
 
-            // Remaining outside ring
+            // ✅ 1) "Remaining" section becomes "Total Time Prayed"
             Text(
-              "Remaining",
+              "Total Time Prayed",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
                 color: theme.colorScheme.onSurface.withAlpha(153),
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              _formatDurationMmSs(safeRemaining),
+              _formatDuration(totalTimePrayed),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 22,
@@ -137,7 +139,7 @@ class PrayNowScreen extends ConsumerWidget {
 
             const SizedBox(height: 22),
 
-            // ✅ Dropdown: square edges + two-line + actually selectable
+            // Dropdown: square edges + two-line + selectable
             InkWell(
               onTap: () => _openAccountPicker(context, theme, session, controller),
               child: Container(
@@ -293,11 +295,5 @@ class PrayNowScreen extends ConsumerWidget {
     } else {
       return "$minutes:$seconds";
     }
-  }
-
-  String _formatDurationMmSs(Duration d) {
-    final minutes = d.inMinutes.toString().padLeft(2, '0');
-    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return "$minutes:$seconds";
   }
 }
