@@ -51,7 +51,7 @@ class PrayNowScreen extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: Column(
           children: [
-            // ✅ Timer Section (moved above dropdown)
+            // ✅ Timer Section
             Column(
               children: [
                 Text(
@@ -65,9 +65,10 @@ class PrayNowScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 24),
 
+                // ✅ Ring with ONLY elapsed centered inside
                 SizedBox(
-                  width: 260,
-                  height: 260,
+                  width: 280,
+                  height: 280,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
@@ -77,8 +78,10 @@ class PrayNowScreen extends ConsumerWidget {
                         backgroundColor: theme.dividerColor.withAlpha(77),
                         strokeWidth: 12.0,
                       ),
+
+                      // Center: Elapsed + time (centered)
                       Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             "Elapsed",
@@ -87,73 +90,80 @@ class PrayNowScreen extends ConsumerWidget {
                               color: theme.colorScheme.onSurface.withAlpha(153),
                               fontWeight: FontWeight.w500,
                             ),
+                            textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 10),
                           Text(
                             _formatDuration(elapsed),
                             style: TextStyle(
-                              fontSize: 36,
+                              fontSize: 40,
                               fontWeight: FontWeight.w700,
                               color: theme.colorScheme.primary,
+                              height: 1.0,
                             ),
-                          ),
-                          const SizedBox(height: 24),
-                          Text(
-                            "Remaining",
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: theme.colorScheme.onSurface.withAlpha(153),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _formatDurationMmSs(safeRemaining),
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.onSurface,
-                            ),
+                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
 
-            const SizedBox(height: 24),
-
-            // ✅ Account dropdown (taller)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: theme.dividerColor),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.account_circle_outlined, size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      "Current Account",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: theme.colorScheme.onSurface.withAlpha(178),
-                      ),
-                    ),
+                // ✅ Remaining OUTSIDE the circle (between ring and dropdown)
+                const SizedBox(height: 18),
+                Text(
+                  "Remaining",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: theme.colorScheme.onSurface.withAlpha(153),
+                    fontWeight: FontWeight.w500,
                   ),
-                  const Icon(Icons.arrow_drop_down, size: 20),
-                ],
-              ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _formatDurationMmSs(safeRemaining),
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+
+                // ✅ Move dropdown lower (more breathing room)
+                const SizedBox(height: 28),
+
+                // Account dropdown (taller)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: theme.dividerColor),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.account_circle_outlined, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          "Current Account",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: theme.colorScheme.onSurface.withAlpha(178),
+                          ),
+                        ),
+                      ),
+                      const Icon(Icons.arrow_drop_down, size: 20),
+                    ],
+                  ),
+                ),
+              ],
             ),
 
             const Spacer(),
 
-            // Control Buttons
+            // ✅ Control Buttons (remove Break & Clock Out row)
             Column(
               children: [
                 Row(
@@ -205,38 +215,6 @@ class PrayNowScreen extends ConsumerWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(48),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        onPressed: () {},
-                        icon: const Icon(Icons.free_breakfast_outlined, size: 20),
-                        label: const Text("Break"),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(48),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        onPressed: () {},
-                        icon: const Icon(Icons.logout_outlined, size: 20),
-                        label: const Text("Clock Out"),
                       ),
                     ),
                   ],
