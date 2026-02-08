@@ -14,8 +14,9 @@ class PrayNowScreen extends ConsumerWidget {
     final session = ref.watch(sessionProvider);
     final controller = ref.read(sessionProvider.notifier);
 
-    // ✅ TODO: replace this with your selected account name from state/provider
-    final accountName = "Head Office";
+    // ✅ TEMP (until you wire real accounts):
+    // This should come from the selected account/project state.
+    final selectedAccountName = "Head Office";
 
     const totalSession = Duration(minutes: 60);
     final elapsed = session.elapsed;
@@ -55,9 +56,9 @@ class PrayNowScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ✅ #1 Account name header (bigger + left aligned)
+            // ✅ Top header = selected account name (bigger + left aligned)
             Text(
-              accountName,
+              selectedAccountName,
               textAlign: TextAlign.left,
               style: TextStyle(
                 fontSize: 16,
@@ -65,19 +66,8 @@ class PrayNowScreen extends ConsumerWidget {
                 color: theme.colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              "PRAYER SESSION",
-              textAlign: TextAlign.left,
-              style: TextStyle(
-                fontSize: 11,
-                letterSpacing: 2.0,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface.withAlpha(153),
-              ),
-            ),
 
-            const SizedBox(height: 22),
+            const SizedBox(height: 18),
 
             // Ring
             Center(
@@ -148,12 +138,12 @@ class PrayNowScreen extends ConsumerWidget {
 
             const SizedBox(height: 22),
 
-            // Account dropdown
+            // ✅ Dropdown: square edges + two-line (Account label + selected name)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(0), // ✅ square
                 border: Border.all(color: theme.dividerColor),
               ),
               child: Row(
@@ -161,12 +151,29 @@ class PrayNowScreen extends ConsumerWidget {
                   const Icon(Icons.account_circle_outlined, size: 20),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      "Current Account",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: theme.colorScheme.onSurface.withAlpha(178),
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "Account",
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurface.withAlpha(140),
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          selectedAccountName,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const Icon(Icons.arrow_drop_down, size: 20),
@@ -174,19 +181,16 @@ class PrayNowScreen extends ConsumerWidget {
               ),
             ),
 
-            // ✅ #2 Match reference: tighter drop-down → buttons spacing
             const SizedBox(height: 18),
 
-            // Buttons
+            // ✅ Buttons: true pill (very round)
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(52),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16), // pill-ish
-                      ),
+                      shape: const StadiumBorder(), // ✅ pill
                       side: BorderSide(
                         color: theme.colorScheme.primary,
                         width: 1.5,
@@ -215,9 +219,7 @@ class PrayNowScreen extends ConsumerWidget {
                     style: FilledButton.styleFrom(
                       backgroundColor: theme.colorScheme.error,
                       minimumSize: const Size.fromHeight(52),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16), // pill-ish
-                      ),
+                      shape: const StadiumBorder(), // ✅ pill
                     ),
                     onPressed: controller.end,
                     child: const Text(
@@ -233,7 +235,6 @@ class PrayNowScreen extends ConsumerWidget {
             ),
 
             const Spacer(),
-
             const SizedBox(height: 18),
           ],
         ),
