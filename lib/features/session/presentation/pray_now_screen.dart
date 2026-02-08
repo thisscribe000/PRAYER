@@ -14,9 +14,7 @@ class PrayNowScreen extends ConsumerWidget {
     final session = ref.watch(sessionProvider);
     final controller = ref.read(sessionProvider.notifier);
 
-    // ✅ TEMP (until you wire real accounts):
-    // This should come from the selected account/project state.
-    final selectedAccountName = "Head Office";
+    final selectedAccountName = controller.currentProject.name;
 
     const totalSession = Duration(minutes: 60);
     final elapsed = session.elapsed;
@@ -40,6 +38,7 @@ class PrayNowScreen extends ConsumerWidget {
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: const BackButton(),
         actions: [
           IconButton(
             icon: const Icon(Icons.brightness_6_outlined),
@@ -56,7 +55,7 @@ class PrayNowScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ✅ Top header = selected account name (bigger + left aligned)
+            // ✅ Header = selected account name
             Text(
               selectedAccountName,
               textAlign: TextAlign.left,
@@ -138,59 +137,62 @@ class PrayNowScreen extends ConsumerWidget {
 
             const SizedBox(height: 22),
 
-            // ✅ Dropdown: square edges + two-line (Account label + selected name)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(0), // ✅ square
-                border: Border.all(color: theme.dividerColor),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.account_circle_outlined, size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          "Account",
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.onSurface.withAlpha(140),
-                            letterSpacing: 0.4,
+            // ✅ Dropdown: square edges + two-line + actually selectable
+            InkWell(
+              onTap: () => _openAccountPicker(context, theme, session, controller),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(0),
+                  border: Border.all(color: theme.dividerColor),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.account_circle_outlined, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            "Account",
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onSurface.withAlpha(140),
+                              letterSpacing: 0.4,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          selectedAccountName,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.onSurface,
+                          const SizedBox(height: 4),
+                          Text(
+                            selectedAccountName,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onSurface,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const Icon(Icons.arrow_drop_down, size: 20),
-                ],
+                    const Icon(Icons.arrow_drop_down, size: 20),
+                  ],
+                ),
               ),
             ),
 
             const SizedBox(height: 18),
 
-            // ✅ Buttons: true pill (very round)
+            // Buttons: pill
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(52),
-                      shape: const StadiumBorder(), // ✅ pill
+                      shape: const StadiumBorder(),
                       side: BorderSide(
                         color: theme.colorScheme.primary,
                         width: 1.5,
@@ -219,7 +221,7 @@ class PrayNowScreen extends ConsumerWidget {
                     style: FilledButton.styleFrom(
                       backgroundColor: theme.colorScheme.error,
                       minimumSize: const Size.fromHeight(52),
-                      shape: const StadiumBorder(), // ✅ pill
+                      shape: const StadiumBorder(),
                     ),
                     onPressed: controller.end,
                     child: const Text(
@@ -239,6 +241,45 @@ class PrayNowScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _openAccountPicker(
+    BuildContext context,
+    ThemeData theme,
+    SessionState session,
+    SessionController controller,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            itemCount: session.projects.length,
+            separatorBuilder: (_, __) => Divider(color: theme.dividerColor),
+            itemBuilder: (_, i) {
+              final p = session.projects[i];
+              final isSelected = p.id == session.selectedProjectId;
+
+              return ListTile(
+                title: Text(
+                  p.name,
+                  style: TextStyle(
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+                trailing: isSelected ? const Icon(Icons.check) : null,
+                onTap: () {
+                  controller.selectProject(p.id);
+                  Navigator.pop(ctx);
+                },
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
