@@ -35,6 +35,12 @@ class PrayerProject {
     );
   }
 
+  DateTime? get lastSessionDate {
+    if (sessions.isEmpty) return null;
+    final copy = [...sessions]..sort((a, b) => a.date.compareTo(b.date));
+    return copy.last.date;
+  }
+
   PrayerProject copyWith({
     String? id,
     String? name,
@@ -87,15 +93,75 @@ class SessionController extends StateNotifier<SessionState> {
           ),
         ) {
     _loadProjects();
+    _restoreRunState(); // ✅ restore persisted timer state
   }
 
-  Timer? _timer;
+  Timer? _ticker;
 
-  // ---------------- ANALYTICS ----------------
+  // ---------------- PERSISTENT RUN STATE ----------------
+  static const String _runBoxName = 'sessionBox';
+  static const String _kIsRunning = 'isRunning';
+  static const String _kStartedAtMs = 'startedAtMs';
+  static const String _kBaseElapsedSec = 'baseElapsedSec';
+
+  Box get _runBox => Hive.box(_runBoxName);
+
+  void _saveRunState({
+    required bool isRunning,
+    int? startedAtMs,
+    required int baseElapsedSec,
+  }) {
+    // fire-and-forget but ensure flush request is made
+    unawaited(_runBox.put(_kIsRunning, isRunning));
+    unawaited(_runBox.put(_kStartedAtMs, startedAtMs));
+    unawaited(_runBox.put(_kBaseElapsedSec, baseElapsedSec));
+    unawaited(_runBox.flush());
+  }
+
+  void _clearRunState() {
+    _saveRunState(isRunning: false, startedAtMs: null, baseElapsedSec: 0);
+  }
+
+  Duration _computeElapsedNow() {
+    final isRunning = (_runBox.get(_kIsRunning) as bool?) ?? false;
+    final startedAtMs = (_runBox.get(_kStartedAtMs) as int?) ?? 0;
+    final baseElapsedSec = (_runBox.get(_kBaseElapsedSec) as int?) ?? 0;
+
+    final base = Duration(seconds: baseElapsedSec);
+
+    if (!isRunning || startedAtMs <= 0) return base;
+
+    final startedAt = DateTime.fromMillisecondsSinceEpoch(startedAtMs);
+    final diff = DateTime.now().difference(startedAt);
+    return base + diff;
+  }
+
+  void _restoreRunState() {
+    final isRunning = (_runBox.get(_kIsRunning) as bool?) ?? false;
+    final elapsed = _computeElapsedNow();
+
+    state = state.copyWith(
+      isRunning: isRunning,
+      elapsed: elapsed,
+    );
+
+    if (isRunning) {
+      _startTicker();
+    }
+  }
+
+  void _startTicker() {
+    _ticker?.cancel();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!state.isRunning) return;
+      state = state.copyWith(elapsed: _computeElapsedNow());
+    });
+  }
+
+  // ---------------- ANALYTICS (used by Home screen) ----------------
 
   Duration get todayTotal {
     final now = DateTime.now();
-
     final todaySessions = state.projects
         .expand((p) => p.sessions)
         .where((s) =>
@@ -105,7 +171,7 @@ class SessionController extends StateNotifier<SessionState> {
 
     return todaySessions.fold(
       Duration.zero,
-      (prev, element) => prev + element.duration,
+      (prev, e) => prev + e.duration,
     );
   }
 
@@ -119,72 +185,61 @@ class SessionController extends StateNotifier<SessionState> {
 
     return weekSessions.fold(
       Duration.zero,
-      (prev, element) => prev + element.duration,
+      (prev, e) => prev + e.duration,
     );
   }
 
-  PrayerProject _defaultProject() {
-    return PrayerProject(
-      id: const Uuid().v4(),
-      name: "General",
-      sessions: [],
-    );
-  }
-
-  // ---------------- LOAD ----------------
+  // ---------------- LOAD / SAVE PROJECTS ----------------
 
   void _loadProjects() {
     final box = Hive.box('projectsBox');
     final saved = box.get('projects');
 
-    if (saved != null) {
-      final loadedProjects = (saved as List)
-          .map((e) {
-            final map = Map<String, dynamic>.from(e);
-
-            return PrayerProject(
-              id: map['id'],
-              name: map['name'],
-              sessions: (map['sessions'] as List).map((s) {
-                final sessionMap = Map<String, dynamic>.from(s);
-                return PrayerSession(
-                  duration: Duration(seconds: sessionMap['duration']),
-                  date: DateTime.parse(sessionMap['date']),
-                );
-              }).toList(),
-            );
-          })
-          .toList();
-
-      // ✅ Safety: if saved list is empty, create default
-      if (loadedProjects.isEmpty) {
-        final d = _defaultProject();
-        state = state.copyWith(
-          projects: [d],
-          selectedProjectId: d.id,
-        );
-        _saveProjects();
-        return;
-      }
-
-      // ✅ Safety: selectedProjectId must always be valid
-      final selected = loadedProjects.first.id;
-
-      state = state.copyWith(
-        projects: loadedProjects,
-        selectedProjectId: selected,
-      );
-    } else {
-      final d = _defaultProject();
-      state = state.copyWith(
-        projects: [d],
-        selectedProjectId: d.id,
-      );
-      _saveProjects();
+    if (saved == null) {
+      // start empty (no placeholder)
+      state = state.copyWith(projects: const [], selectedProjectId: "");
+      return;
     }
-  }
 
-  // ---------------- SAVE ----------------
+    final loadedProjects = (saved as List)
+        .map((e) {
+          final map = Map<String, dynamic>.from(e);
+
+          return PrayerProject(
+            id: map['id'],
+            name: map['name'],
+            sessions: (map['sessions'] as List).map((s) {
+              final sessionMap = Map<String, dynamic>.from(s);
+              return PrayerSession(
+                duration: Duration(seconds: sessionMap['duration']),
+                date: DateTime.parse(sessionMap['date']),
+              );
+            }).toList(),
+          );
+        })
+        .toList();
+
+    if (loadedProjects.isEmpty) {
+      state = state.copyWith(projects: const [], selectedProjectId: "");
+      return;
+    }
+
+    // ✅ select last "deposited into" (most recent session), else last created
+    final withSessions = loadedProjects.where((p) => p.sessions.isNotEmpty).toList();
+
+    String selectedId;
+    if (withSessions.isNotEmpty) {
+      withSessions.sort((a, b) => a.lastSessionDate!.compareTo(b.lastSessionDate!));
+      selectedId = withSessions.last.id;
+    } else {
+      selectedId = loadedProjects.last.id;
+    }
+
+    state = state.copyWith(
+      projects: loadedProjects,
+      selectedProjectId: selectedId,
+    );
+  }
 
   void _saveProjects() {
     final box = Hive.box('projectsBox');
@@ -205,32 +260,54 @@ class SessionController extends StateNotifier<SessionState> {
     box.put('projects', serialized);
   }
 
-  // ---------------- TIMER ----------------
+  // ---------------- TIMER CONTROLS ----------------
 
   void start() {
     if (state.isRunning) return;
+    if (state.selectedProjectId.isEmpty) return; // must have an account
+
+    final baseElapsedSec = state.elapsed.inSeconds;
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+
+    _saveRunState(
+      isRunning: true,
+      startedAtMs: nowMs,
+      baseElapsedSec: baseElapsedSec,
+    );
 
     state = state.copyWith(isRunning: true);
-
-    _timer = Timer.periodic(
-      const Duration(seconds: 1),
-      (_) {
-        state = state.copyWith(
-          elapsed: state.elapsed + const Duration(seconds: 1),
-        );
-      },
-    );
+    _startTicker();
   }
 
   void pause() {
-    _timer?.cancel();
-    state = state.copyWith(isRunning: false);
+    if (!state.isRunning) return;
+
+    final frozen = _computeElapsedNow();
+    _ticker?.cancel();
+
+    _saveRunState(
+      isRunning: false,
+      startedAtMs: null,
+      baseElapsedSec: frozen.inSeconds,
+    );
+
+    state = state.copyWith(isRunning: false, elapsed: frozen);
   }
 
   void end() {
-    _timer?.cancel();
+    // freeze if running so we capture accurate elapsed
+    if (state.isRunning) {
+      pause();
+    }
 
     if (state.elapsed == Duration.zero) {
+      _clearRunState();
+      state = state.copyWith(isRunning: false, elapsed: Duration.zero);
+      return;
+    }
+
+    if (state.selectedProjectId.isEmpty) {
+      _clearRunState();
       state = state.copyWith(isRunning: false, elapsed: Duration.zero);
       return;
     }
@@ -253,18 +330,18 @@ class SessionController extends StateNotifier<SessionState> {
       projects: updatedProjects,
       elapsed: Duration.zero,
       isRunning: false,
+      selectedProjectId: state.selectedProjectId, // stay on same account
     );
 
+    _clearRunState();
     _saveProjects();
   }
 
-  // ---------------- PROJECT MANAGEMENT ----------------
+  // ---------------- ACCOUNT MANAGEMENT (used by Bank + PrayNow) ----------------
 
   void selectProject(String id) {
-    // ✅ ignore invalid selection
     final exists = state.projects.any((p) => p.id == id);
     if (!exists) return;
-
     state = state.copyWith(selectedProjectId: id);
   }
 
@@ -280,39 +357,47 @@ class SessionController extends StateNotifier<SessionState> {
 
     state = state.copyWith(
       projects: [...state.projects, newProject],
-      selectedProjectId: newProject.id, // ✅ select new one
+      selectedProjectId: newProject.id,
     );
 
     _saveProjects();
   }
 
   void deleteProject(String id) {
-    if (state.projects.length <= 1) return;
-
     final updated = state.projects.where((p) => p.id != id).toList();
 
-    // ✅ Safety: ensure at least 1 remains
     if (updated.isEmpty) {
-      final d = _defaultProject();
-      state = state.copyWith(projects: [d], selectedProjectId: d.id);
+      state = state.copyWith(projects: const [], selectedProjectId: "");
       _saveProjects();
       return;
     }
 
-    final newSelected = updated.first.id;
-
     state = state.copyWith(
       projects: updated,
-      selectedProjectId: newSelected,
+      selectedProjectId: updated.last.id,
     );
 
     _saveProjects();
   }
 
+  // ✅ IMPORTANT: keep PrayNowScreen unchanged (it assumes non-null)
   PrayerProject get currentProject {
-    return state.projects.firstWhere(
-      (p) => p.id == state.selectedProjectId,
-      orElse: () => state.projects.isNotEmpty ? state.projects.first : _defaultProject(),
-    );
+    if (state.projects.isEmpty || state.selectedProjectId.isEmpty) {
+      return PrayerProject(id: "", name: "Open an Account", sessions: []);
+    }
+
+    for (final p in state.projects) {
+      if (p.id == state.selectedProjectId) return p;
+    }
+
+    return state.projects.isNotEmpty
+        ? state.projects.last
+        : PrayerProject(id: "", name: "Open an Account", sessions: []);
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
   }
 }

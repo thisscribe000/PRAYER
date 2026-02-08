@@ -9,10 +9,10 @@ Future<void> main() async {
 
   await Hive.initFlutter();
 
-  // ✅ Already used for accounts/projects
+  // Already used for projects/accounts
   await Hive.openBox('projectsBox');
 
-  // ✅ Needed for persistent timer run-state
+  // NEW: persistent session run-state
   await Hive.openBox('sessionBox');
 
   runApp(const ProviderScope(child: PrayWithMeApp()));
