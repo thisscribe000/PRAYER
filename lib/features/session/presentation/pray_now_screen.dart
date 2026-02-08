@@ -14,6 +14,9 @@ class PrayNowScreen extends ConsumerWidget {
     final session = ref.watch(sessionProvider);
     final controller = ref.read(sessionProvider.notifier);
 
+    // ✅ TODO: replace this with your selected account name from state/provider
+    final accountName = "Head Office";
+
     const totalSession = Duration(minutes: 60);
     final elapsed = session.elapsed;
 
@@ -50,112 +53,180 @@ class PrayNowScreen extends ConsumerWidget {
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ✅ Timer Section
-            Column(
-              children: [
-                Text(
-                  "PRAYER SESSION",
-                  style: TextStyle(
-                    fontSize: 11,
-                    letterSpacing: 2.0,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface.withAlpha(153),
-                  ),
-                ),
-                const SizedBox(height: 24),
+            // ✅ #1 Account name header (bigger + left aligned)
+            Text(
+              accountName,
+              textAlign: TextAlign.left,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              "PRAYER SESSION",
+              textAlign: TextAlign.left,
+              style: TextStyle(
+                fontSize: 11,
+                letterSpacing: 2.0,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface.withAlpha(153),
+              ),
+            ),
 
-                // ✅ Ring with ONLY elapsed centered inside
-                SizedBox(
-                  width: 280,
-                  height: 280,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      ProgressRing(
-                        progress: progress,
-                        color: theme.colorScheme.primary,
-                        backgroundColor: theme.dividerColor.withAlpha(77),
-                        strokeWidth: 12.0,
-                      ),
+            const SizedBox(height: 22),
 
-                      // Center: Elapsed + time (centered)
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            "Elapsed",
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: theme.colorScheme.onSurface.withAlpha(153),
-                              fontWeight: FontWeight.w500,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            _formatDuration(elapsed),
-                            style: TextStyle(
-                              fontSize: 40,
-                              fontWeight: FontWeight.w700,
-                              color: theme.colorScheme.primary,
-                              height: 1.0,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                // ✅ Remaining OUTSIDE the circle (between ring and dropdown)
-                const SizedBox(height: 18),
-                Text(
-                  "Remaining",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: theme.colorScheme.onSurface.withAlpha(153),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _formatDurationMmSs(safeRemaining),
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-
-                // ✅ Move dropdown lower (more breathing room)
-                const SizedBox(height: 28),
-
-                // Account dropdown (taller)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: theme.dividerColor),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.account_circle_outlined, size: 20),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          "Current Account",
+            // Ring
+            Center(
+              child: SizedBox(
+                width: 280,
+                height: 280,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    ProgressRing(
+                      progress: progress,
+                      color: theme.colorScheme.primary,
+                      backgroundColor: theme.dividerColor.withAlpha(77),
+                      strokeWidth: 12.0,
+                    ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "Elapsed",
                           style: TextStyle(
-                            fontSize: 14,
-                            color: theme.colorScheme.onSurface.withAlpha(178),
+                            fontSize: 12,
+                            color: theme.colorScheme.onSurface.withAlpha(153),
+                            fontWeight: FontWeight.w500,
                           ),
+                          textAlign: TextAlign.center,
                         ),
+                        const SizedBox(height: 10),
+                        Text(
+                          _formatDuration(elapsed),
+                          style: TextStyle(
+                            fontSize: 40,
+                            fontWeight: FontWeight.w700,
+                            color: theme.colorScheme.primary,
+                            height: 1.0,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 18),
+
+            // Remaining outside ring
+            Text(
+              "Remaining",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.onSurface.withAlpha(153),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _formatDurationMmSs(safeRemaining),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+
+            const SizedBox(height: 22),
+
+            // Account dropdown
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: theme.dividerColor),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.account_circle_outlined, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      "Current Account",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: theme.colorScheme.onSurface.withAlpha(178),
                       ),
-                      const Icon(Icons.arrow_drop_down, size: 20),
-                    ],
+                    ),
+                  ),
+                  const Icon(Icons.arrow_drop_down, size: 20),
+                ],
+              ),
+            ),
+
+            // ✅ #2 Match reference: tighter drop-down → buttons spacing
+            const SizedBox(height: 18),
+
+            // Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16), // pill-ish
+                      ),
+                      side: BorderSide(
+                        color: theme.colorScheme.primary,
+                        width: 1.5,
+                      ),
+                    ),
+                    onPressed: () {
+                      if (session.isRunning) {
+                        controller.pause();
+                      } else {
+                        controller.start();
+                      }
+                    },
+                    child: Text(
+                      session.isRunning ? "Pause" : "Start",
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: theme.colorScheme.error,
+                      minimumSize: const Size.fromHeight(52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16), // pill-ish
+                      ),
+                    ),
+                    onPressed: controller.end,
+                    child: const Text(
+                      "End Session",
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -163,66 +234,7 @@ class PrayNowScreen extends ConsumerWidget {
 
             const Spacer(),
 
-            // ✅ Control Buttons (remove Break & Clock Out row)
-            Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(56),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          side: BorderSide(
-                            color: theme.colorScheme.primary,
-                            width: 1.5,
-                          ),
-                        ),
-                        onPressed: () {
-                          if (session.isRunning) {
-                            controller.pause();
-                          } else {
-                            controller.start();
-                          }
-                        },
-                        child: Text(
-                          session.isRunning ? "Pause" : "Start",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: theme.colorScheme.error,
-                          minimumSize: const Size.fromHeight(56),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: controller.end,
-                        child: const Text(
-                          "End Session",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
+            const SizedBox(height: 18),
           ],
         ),
       ),
