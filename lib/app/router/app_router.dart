@@ -6,7 +6,6 @@ import '../../features/home/presentation/home_screen.dart';
 import '../../features/invite/presentation/invite_screen.dart';
 import '../../features/rooms/presentation/rooms_screen.dart';
 import '../../features/session/presentation/pray_now_screen.dart';
-import '../../features/session/presentation/session_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import 'app_shell.dart';
 
@@ -26,7 +25,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
 
       // Full-screen flows (not part of bottom tabs)
-      GoRoute(path: '/session', builder: (c, s) => const SessionScreen()),
+      GoRoute(path: '/session', builder: (c, s) => const PrayNowScreen()),
       GoRoute(path: '/pray', builder: (c, s) => const PrayNowScreen()),
     ],
   );

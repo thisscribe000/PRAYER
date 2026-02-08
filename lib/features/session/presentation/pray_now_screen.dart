@@ -18,7 +18,7 @@ class PrayNowScreen extends ConsumerWidget {
     final selectedAccountName = current.name;
     final savedTotal = current.total;
 
-    // ✅ FIX #2: keep total showing during pause too
+    // ✅ keep total showing during pause too
     final liveTotal = savedTotal + session.elapsed;
 
     // TEMP test cycle (60 seconds)
@@ -43,6 +43,18 @@ class PrayNowScreen extends ConsumerWidget {
         : theme.colorScheme.secondary;
 
     final dropdownDisabled = session.isRunning;
+
+    void showPrayerInProgressToast() {
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.clearSnackBars();
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text("Prayer already in progress"),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -161,11 +173,15 @@ class PrayNowScreen extends ConsumerWidget {
 
             const SizedBox(height: 22),
 
+            // ✅ Dropdown: when running, show toast instead of opening
             InkWell(
-              onTap: dropdownDisabled
-                  ? null
-                  : () => _openAccountPicker(
-                      context, theme, session, controller),
+              onTap: () {
+                if (dropdownDisabled) {
+                  showPrayerInProgressToast();
+                  return;
+                }
+                _openAccountPicker(context, theme, session, controller);
+              },
               child: Opacity(
                 opacity: dropdownDisabled ? 0.6 : 1.0,
                 child: Container(
@@ -213,20 +229,6 @@ class PrayNowScreen extends ConsumerWidget {
                 ),
               ),
             ),
-
-            if (dropdownDisabled) ...[
-              const SizedBox(height: 10),
-              Text(
-                "Prayer already in progress",
-                textAlign: TextAlign.left,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color:
-                      theme.colorScheme.onSurface.withAlpha(153),
-                ),
-              ),
-            ],
 
             const SizedBox(height: 18),
 
