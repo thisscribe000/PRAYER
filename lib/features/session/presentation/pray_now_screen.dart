@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -14,22 +15,24 @@ class PrayNowScreen extends ConsumerWidget {
     final session = ref.watch(sessionProvider);
     final controller = ref.read(sessionProvider.notifier);
 
-    final selectedAccountName = controller.currentProject.name;
+    // ✅ Corrected + clean
+    final current = controller.currentProject;
+    final selectedAccountName = current.name;
+    final savedTotal = current.total;
 
-    // Total prayed time for selected project (sum of saved sessions)
-    final totalTimePrayed = controller.currentProject.total;
+    final liveTotal =
+        savedTotal + (session.isRunning ? session.elapsed : Duration.zero);
 
-    // ✅ Ring loops every 60 minutes
-    const cycle = Duration(seconds: 60); // TEMP test cycle
+    // TEMP test cycle (60 seconds)
+    const cycle = Duration(seconds: 60);
 
     final elapsed = session.elapsed;
     final elapsedSeconds = elapsed.inSeconds;
     final cycleSeconds = cycle.inSeconds;
 
-    // which cycle are we currently in? (0,1,2,...)
-    final cycleIndex = cycleSeconds == 0 ? 0 : (elapsedSeconds ~/ cycleSeconds);
+    final cycleIndex =
+        cycleSeconds == 0 ? 0 : (elapsedSeconds ~/ cycleSeconds);
 
-    // progress inside the current cycle (0..cycleSeconds)
     final cycleElapsedSeconds =
         cycleSeconds == 0 ? 0 : (elapsedSeconds % cycleSeconds);
 
@@ -37,9 +40,11 @@ class PrayNowScreen extends ConsumerWidget {
         ? 0.0
         : (cycleElapsedSeconds / cycleSeconds).clamp(0.0, 1.0);
 
-    // ✅ Alternate ring color each cycle
-    final ringColor =
-        (cycleIndex % 2 == 0) ? theme.colorScheme.primary : theme.colorScheme.secondary;
+    final targetRingColor = (cycleIndex % 2 == 0)
+        ? theme.colorScheme.primary
+        : theme.colorScheme.secondary;
+
+    final dropdownDisabled = session.isRunning;
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -55,19 +60,21 @@ class PrayNowScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.brightness_6_outlined),
             onPressed: () {
-              final current = ref.read(themeModeProvider);
+              final currentMode = ref.read(themeModeProvider);
               ref.read(themeModeProvider.notifier).state =
-                  current == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+                  currentMode == ThemeMode.light
+                      ? ThemeMode.dark
+                      : ThemeMode.light;
             },
           )
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header = selected account name
             Text(
               selectedAccountName,
               textAlign: TextAlign.left,
@@ -80,67 +87,96 @@ class PrayNowScreen extends ConsumerWidget {
 
             const SizedBox(height: 18),
 
-            // Ring
             Center(
               child: SizedBox(
                 width: 280,
                 height: 280,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    ProgressRing(
-                      progress: progress,
-                      color: ringColor,
-                      backgroundColor: theme.dividerColor.withAlpha(77),
-                      strokeWidth: 12.0,
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          "Praying Now",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: theme.colorScheme.onSurface.withAlpha(153),
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.center,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 450),
+                  child: Builder(
+                    // ✅ No deprecated Color.value
+                    key: ValueKey(targetRingColor.toARGB32()),
+                    builder: (_) {
+                      final rotate = 2 *
+                          pi *
+                          (elapsedSeconds /
+                              max(1, cycleSeconds));
+
+                      return Transform.rotate(
+                        angle: rotate,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            ProgressRing(
+                              progress: progress,
+                              color: targetRingColor,
+                              backgroundColor: theme
+                                  .dividerColor
+                                  .withAlpha(77),
+                              strokeWidth: 12.0,
+                            ),
+                            Transform.rotate(
+                              angle: -rotate,
+                              child: Column(
+                                mainAxisSize:
+                                    MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    "Praying Now",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: theme
+                                          .colorScheme
+                                          .onSurface
+                                          .withAlpha(153),
+                                      fontWeight:
+                                          FontWeight.w600,
+                                    ),
+                                    textAlign:
+                                        TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    _formatDurationFlexible(
+                                        elapsed),
+                                    style: TextStyle(
+                                      fontSize: 40,
+                                      fontWeight:
+                                          FontWeight.w700,
+                                      color:
+                                          targetRingColor,
+                                      height: 1.0,
+                                    ),
+                                    textAlign:
+                                        TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 10),
-                        Text(
-                          // keep current format (shows hours only when needed)
-                          _formatDurationFlexible(elapsed),
-                          style: TextStyle(
-                            fontSize: 40,
-                            fontWeight: FontWeight.w700,
-                            color: ringColor,
-                            height: 1.0,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ],
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
 
             const SizedBox(height: 18),
 
-            // Total time prayed for selected project
             Text(
               "Total Time Prayed",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
-                color: theme.colorScheme.onSurface.withAlpha(153),
+                color: theme.colorScheme.onSurface
+                    .withAlpha(153),
                 fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              // ✅ Always HH:MM:SS even when hours = 00
-              _formatDurationHhMmSs(totalTimePrayed),
+              _formatDurationHhMmSs(liveTotal),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 22,
@@ -151,64 +187,97 @@ class PrayNowScreen extends ConsumerWidget {
 
             const SizedBox(height: 22),
 
-            // Dropdown: square edges + two-line + selectable
             InkWell(
-              onTap: () => _openAccountPicker(context, theme, session, controller),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(0),
-                  border: Border.all(color: theme.dividerColor),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.account_circle_outlined, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            "Account",
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.onSurface.withAlpha(140),
-                              letterSpacing: 0.4,
+              onTap: dropdownDisabled
+                  ? null
+                  : () => _openAccountPicker(
+                      context, theme, session, controller),
+              child: Opacity(
+                opacity: dropdownDisabled ? 0.6 : 1.0,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(
+                          horizontal: 18, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius:
+                        BorderRadius.circular(0),
+                    border: Border.all(
+                        color: theme.dividerColor),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          mainAxisSize:
+                              MainAxisSize.min,
+                          children: [
+                            Text(
+                              "Account",
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight:
+                                    FontWeight.w600,
+                                color: theme
+                                    .colorScheme
+                                    .onSurface
+                                    .withAlpha(140),
+                                letterSpacing: 0.4,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            selectedAccountName,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.onSurface,
+                            const SizedBox(height: 6),
+                            Text(
+                              selectedAccountName,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight:
+                                    FontWeight.w700,
+                                color: theme
+                                    .colorScheme
+                                    .onSurface,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const Icon(Icons.arrow_drop_down, size: 20),
-                  ],
+                      const Icon(
+                          Icons.arrow_drop_down),
+                    ],
+                  ),
                 ),
               ),
             ),
 
+            if (dropdownDisabled) ...[
+              const SizedBox(height: 10),
+              Text(
+                "Prayer already in progress",
+                textAlign: TextAlign.left,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: theme.colorScheme.onSurface
+                      .withAlpha(153),
+                ),
+              ),
+            ],
+
             const SizedBox(height: 18),
 
-            // Buttons: pill
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(52),
+                    style:
+                        OutlinedButton.styleFrom(
+                      minimumSize:
+                          const Size.fromHeight(52),
                       shape: const StadiumBorder(),
                       side: BorderSide(
-                        color: theme.colorScheme.primary,
+                        color: theme
+                            .colorScheme.primary,
                         width: 1.5,
                       ),
                     ),
@@ -220,11 +289,15 @@ class PrayNowScreen extends ConsumerWidget {
                       }
                     },
                     child: Text(
-                      session.isRunning ? "Pause" : "Start",
+                      session.isRunning
+                          ? "Pause"
+                          : "Start",
                       style: TextStyle(
                         fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.primary,
+                        fontWeight:
+                            FontWeight.w600,
+                        color: theme
+                            .colorScheme.primary,
                       ),
                     ),
                   ),
@@ -232,17 +305,26 @@ class PrayNowScreen extends ConsumerWidget {
                 const SizedBox(width: 16),
                 Expanded(
                   child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: theme.colorScheme.error,
-                      minimumSize: const Size.fromHeight(52),
+                    style:
+                        FilledButton.styleFrom(
+                      backgroundColor:
+                          theme.colorScheme.error,
+                      minimumSize:
+                          const Size.fromHeight(52),
                       shape: const StadiumBorder(),
                     ),
-                    onPressed: controller.end,
+                    onPressed:
+                        (session.isRunning ||
+                                session.elapsed >
+                                    Duration.zero)
+                            ? controller.end
+                            : null,
                     child: const Text(
                       "End Session",
                       style: TextStyle(
                         fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                        fontWeight:
+                            FontWeight.w600,
                       ),
                     ),
                   ),
@@ -270,21 +352,29 @@ class PrayNowScreen extends ConsumerWidget {
       builder: (ctx) {
         return SafeArea(
           child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding:
+                const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 12),
             itemCount: session.projects.length,
-            separatorBuilder: (_, __) => Divider(color: theme.dividerColor),
+            separatorBuilder: (_, __) =>
+                Divider(color: theme.dividerColor),
             itemBuilder: (_, i) {
               final p = session.projects[i];
-              final isSelected = p.id == session.selectedProjectId;
+              final isSelected =
+                  p.id == session.selectedProjectId;
 
               return ListTile(
                 title: Text(
                   p.name,
                   style: TextStyle(
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: isSelected
+                        ? FontWeight.w700
+                        : FontWeight.w500,
                   ),
                 ),
-                trailing: isSelected ? const Icon(Icons.check) : null,
+                trailing: isSelected
+                    ? const Icon(Icons.check)
+                    : null,
                 onTap: () {
                   controller.selectProject(p.id);
                   Navigator.pop(ctx);
@@ -297,24 +387,36 @@ class PrayNowScreen extends ConsumerWidget {
     );
   }
 
-  // Shows MM:SS, but switches to HH:MM:SS once hours > 0
   String _formatDurationFlexible(Duration d) {
     final hours = d.inHours;
-    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    final minutes =
+        d.inMinutes.remainder(60)
+            .toString()
+            .padLeft(2, '0');
+    final seconds =
+        d.inSeconds.remainder(60)
+            .toString()
+            .padLeft(2, '0');
 
     if (hours > 0) {
-      final hh = hours.toString().padLeft(2, '0');
+      final hh =
+          hours.toString().padLeft(2, '0');
       return "$hh:$minutes:$seconds";
     }
     return "$minutes:$seconds";
   }
 
-  // Always HH:MM:SS (even when hours = 00)
   String _formatDurationHhMmSs(Duration d) {
-    final hh = d.inHours.toString().padLeft(2, '0');
-    final mm = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final ss = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    final hh =
+        d.inHours.toString().padLeft(2, '0');
+    final mm =
+        d.inMinutes.remainder(60)
+            .toString()
+            .padLeft(2, '0');
+    final ss =
+        d.inSeconds.remainder(60)
+            .toString()
+            .padLeft(2, '0');
     return "$hh:$mm:$ss";
   }
 }
