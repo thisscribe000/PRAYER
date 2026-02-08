@@ -14,13 +14,12 @@ class PrayNowScreen extends ConsumerWidget {
     final session = ref.watch(sessionProvider);
     final controller = ref.read(sessionProvider.notifier);
 
-    // ✅ Corrected + clean
     final current = controller.currentProject;
     final selectedAccountName = current.name;
     final savedTotal = current.total;
 
-    final liveTotal =
-        savedTotal + (session.isRunning ? session.elapsed : Duration.zero);
+    // ✅ FIX #2: keep total showing during pause too
+    final liveTotal = savedTotal + session.elapsed;
 
     // TEMP test cycle (60 seconds)
     const cycle = Duration(seconds: 60);
@@ -82,7 +81,6 @@ class PrayNowScreen extends ConsumerWidget {
                 color: theme.colorScheme.onSurface,
               ),
             ),
-
             const SizedBox(height: 18),
 
             Center(
