@@ -15,7 +15,7 @@ class PrayNowScreen extends ConsumerWidget {
     final session = ref.watch(sessionProvider);
     final controller = ref.read(sessionProvider.notifier);
 
-    // ✅ Corrected + clean
+    // ✅ currentProject is non-nullable in your compiled codebase
     final current = controller.currentProject;
     final selectedAccountName = current.name;
     final savedTotal = current.total;
@@ -70,8 +70,7 @@ class PrayNowScreen extends ConsumerWidget {
         ],
       ),
       body: Padding(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -94,13 +93,10 @@ class PrayNowScreen extends ConsumerWidget {
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 450),
                   child: Builder(
-                    // ✅ No deprecated Color.value
                     key: ValueKey(targetRingColor.toARGB32()),
                     builder: (_) {
-                      final rotate = 2 *
-                          pi *
-                          (elapsedSeconds /
-                              max(1, cycleSeconds));
+                      final rotate =
+                          2 * pi * (elapsedSeconds / max(1, cycleSeconds));
 
                       return Transform.rotate(
                         angle: rotate,
@@ -110,45 +106,35 @@ class PrayNowScreen extends ConsumerWidget {
                             ProgressRing(
                               progress: progress,
                               color: targetRingColor,
-                              backgroundColor: theme
-                                  .dividerColor
-                                  .withAlpha(77),
+                              backgroundColor:
+                                  theme.dividerColor.withAlpha(77),
                               strokeWidth: 12.0,
                             ),
                             Transform.rotate(
                               angle: -rotate,
                               child: Column(
-                                mainAxisSize:
-                                    MainAxisSize.min,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
                                     "Praying Now",
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: theme
-                                          .colorScheme
-                                          .onSurface
+                                      color: theme.colorScheme.onSurface
                                           .withAlpha(153),
-                                      fontWeight:
-                                          FontWeight.w600,
+                                      fontWeight: FontWeight.w600,
                                     ),
-                                    textAlign:
-                                        TextAlign.center,
+                                    textAlign: TextAlign.center,
                                   ),
                                   const SizedBox(height: 10),
                                   Text(
-                                    _formatDurationFlexible(
-                                        elapsed),
+                                    _formatDurationFlexible(elapsed),
                                     style: TextStyle(
                                       fontSize: 40,
-                                      fontWeight:
-                                          FontWeight.w700,
-                                      color:
-                                          targetRingColor,
+                                      fontWeight: FontWeight.w700,
+                                      color: targetRingColor,
                                       height: 1.0,
                                     ),
-                                    textAlign:
-                                        TextAlign.center,
+                                    textAlign: TextAlign.center,
                                   ),
                                 ],
                               ),
@@ -169,19 +155,19 @@ class PrayNowScreen extends ConsumerWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
-                color: theme.colorScheme.onSurface
-                    .withAlpha(153),
+                color: theme.colorScheme.onSurface.withAlpha(153),
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4), // ✅ less space
             Text(
               _formatDurationHhMmSs(liveTotal),
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
+                fontSize: 28, // ✅ bigger
+                fontWeight: FontWeight.w800,
                 color: theme.colorScheme.onSurface,
+                height: 1.0,
               ),
             ),
 
@@ -190,39 +176,30 @@ class PrayNowScreen extends ConsumerWidget {
             InkWell(
               onTap: dropdownDisabled
                   ? null
-                  : () => _openAccountPicker(
-                      context, theme, session, controller),
+                  : () => _openAccountPicker(context, theme, session, controller),
               child: Opacity(
                 opacity: dropdownDisabled ? 0.6 : 1.0,
                 child: Container(
                   padding:
-                      const EdgeInsets.symmetric(
-                          horizontal: 18, vertical: 16),
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surface,
-                    borderRadius:
-                        BorderRadius.circular(0),
-                    border: Border.all(
-                        color: theme.dividerColor),
+                    borderRadius: BorderRadius.circular(0),
+                    border: Border.all(color: theme.dividerColor),
                   ),
                   child: Row(
                     children: [
                       Expanded(
                         child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                          mainAxisSize:
-                              MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
                               "Account",
                               style: TextStyle(
                                 fontSize: 11,
-                                fontWeight:
-                                    FontWeight.w600,
-                                color: theme
-                                    .colorScheme
-                                    .onSurface
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.onSurface
                                     .withAlpha(140),
                                 letterSpacing: 0.4,
                               ),
@@ -232,18 +209,14 @@ class PrayNowScreen extends ConsumerWidget {
                               selectedAccountName,
                               style: TextStyle(
                                 fontSize: 15,
-                                fontWeight:
-                                    FontWeight.w700,
-                                color: theme
-                                    .colorScheme
-                                    .onSurface,
+                                fontWeight: FontWeight.w700,
+                                color: theme.colorScheme.onSurface,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(
-                          Icons.arrow_drop_down),
+                      const Icon(Icons.arrow_drop_down),
                     ],
                   ),
                 ),
@@ -258,8 +231,7 @@ class PrayNowScreen extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: theme.colorScheme.onSurface
-                      .withAlpha(153),
+                  color: theme.colorScheme.onSurface.withAlpha(153),
                 ),
               ),
             ],
@@ -270,14 +242,11 @@ class PrayNowScreen extends ConsumerWidget {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    style:
-                        OutlinedButton.styleFrom(
-                      minimumSize:
-                          const Size.fromHeight(52),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(52),
                       shape: const StadiumBorder(),
                       side: BorderSide(
-                        color: theme
-                            .colorScheme.primary,
+                        color: theme.colorScheme.primary,
                         width: 1.5,
                       ),
                     ),
@@ -289,15 +258,11 @@ class PrayNowScreen extends ConsumerWidget {
                       }
                     },
                     child: Text(
-                      session.isRunning
-                          ? "Pause"
-                          : "Start",
+                      session.isRunning ? "Pause" : "Start",
                       style: TextStyle(
                         fontSize: 15,
-                        fontWeight:
-                            FontWeight.w600,
-                        color: theme
-                            .colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.primary,
                       ),
                     ),
                   ),
@@ -305,26 +270,20 @@ class PrayNowScreen extends ConsumerWidget {
                 const SizedBox(width: 16),
                 Expanded(
                   child: FilledButton(
-                    style:
-                        FilledButton.styleFrom(
-                      backgroundColor:
-                          theme.colorScheme.error,
-                      minimumSize:
-                          const Size.fromHeight(52),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: theme.colorScheme.error,
+                      minimumSize: const Size.fromHeight(52),
                       shape: const StadiumBorder(),
                     ),
                     onPressed:
-                        (session.isRunning ||
-                                session.elapsed >
-                                    Duration.zero)
+                        (session.isRunning || session.elapsed > Duration.zero)
                             ? controller.end
                             : null,
                     child: const Text(
                       "End Session",
                       style: TextStyle(
                         fontSize: 15,
-                        fontWeight:
-                            FontWeight.w600,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -352,29 +311,21 @@ class PrayNowScreen extends ConsumerWidget {
       builder: (ctx) {
         return SafeArea(
           child: ListView.separated(
-            padding:
-                const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             itemCount: session.projects.length,
-            separatorBuilder: (_, __) =>
-                Divider(color: theme.dividerColor),
+            separatorBuilder: (_, __) => Divider(color: theme.dividerColor),
             itemBuilder: (_, i) {
               final p = session.projects[i];
-              final isSelected =
-                  p.id == session.selectedProjectId;
+              final isSelected = p.id == session.selectedProjectId;
 
               return ListTile(
                 title: Text(
                   p.name,
                   style: TextStyle(
-                    fontWeight: isSelected
-                        ? FontWeight.w700
-                        : FontWeight.w500,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   ),
                 ),
-                trailing: isSelected
-                    ? const Icon(Icons.check)
-                    : null,
+                trailing: isSelected ? const Icon(Icons.check) : null,
                 onTap: () {
                   controller.selectProject(p.id);
                   Navigator.pop(ctx);
@@ -389,34 +340,20 @@ class PrayNowScreen extends ConsumerWidget {
 
   String _formatDurationFlexible(Duration d) {
     final hours = d.inHours;
-    final minutes =
-        d.inMinutes.remainder(60)
-            .toString()
-            .padLeft(2, '0');
-    final seconds =
-        d.inSeconds.remainder(60)
-            .toString()
-            .padLeft(2, '0');
+    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
 
     if (hours > 0) {
-      final hh =
-          hours.toString().padLeft(2, '0');
+      final hh = hours.toString().padLeft(2, '0');
       return "$hh:$minutes:$seconds";
     }
     return "$minutes:$seconds";
   }
 
   String _formatDurationHhMmSs(Duration d) {
-    final hh =
-        d.inHours.toString().padLeft(2, '0');
-    final mm =
-        d.inMinutes.remainder(60)
-            .toString()
-            .padLeft(2, '0');
-    final ss =
-        d.inSeconds.remainder(60)
-            .toString()
-            .padLeft(2, '0');
+    final hh = d.inHours.toString().padLeft(2, '0');
+    final mm = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final ss = d.inSeconds.remainder(60).toString().padLeft(2, '0');
     return "$hh:$mm:$ss";
   }
 }
