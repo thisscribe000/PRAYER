@@ -8,8 +8,12 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Hive.initFlutter();
+
+  // ✅ Already used for accounts/projects
   await Hive.openBox('projectsBox');
-  await Hive.openBox('sessionBox'); // ✅ NEW: stores running timer state
+
+  // ✅ Needed for persistent timer run-state
+  await Hive.openBox('sessionBox');
 
   runApp(const ProviderScope(child: PrayWithMeApp()));
 }
