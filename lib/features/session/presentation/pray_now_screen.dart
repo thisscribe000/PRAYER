@@ -14,7 +14,6 @@ class PrayNowScreen extends ConsumerWidget {
     final session = ref.watch(sessionProvider);
     final controller = ref.read(sessionProvider.notifier);
 
-    // ✅ Use Duration for accurate progress + remaining (seconds-level)
     const totalSession = Duration(minutes: 60);
     final elapsed = session.elapsed;
 
@@ -52,35 +51,7 @@ class PrayNowScreen extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: Column(
           children: [
-            // Project dropdown
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: theme.dividerColor),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.work_outline, size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      "Current Project",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: theme.colorScheme.onSurface.withAlpha(178),
-                      ),
-                    ),
-                  ),
-                  const Icon(Icons.arrow_drop_down, size: 20),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Timer Section
+            // ✅ Timer Section (moved above dropdown)
             Column(
               children: [
                 Text(
@@ -92,29 +63,23 @@ class PrayNowScreen extends ConsumerWidget {
                     color: theme.colorScheme.onSurface.withAlpha(153),
                   ),
                 ),
-
                 const SizedBox(height: 24),
 
-                // Progress Ring with Time
                 SizedBox(
                   width: 260,
                   height: 260,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Progress Ring
                       ProgressRing(
                         progress: progress,
                         color: theme.colorScheme.primary,
                         backgroundColor: theme.dividerColor.withAlpha(77),
                         strokeWidth: 12.0,
                       ),
-
-                      // Time Display
                       Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Elapsed Section
                           Text(
                             "Elapsed",
                             style: TextStyle(
@@ -132,10 +97,7 @@ class PrayNowScreen extends ConsumerWidget {
                               color: theme.colorScheme.primary,
                             ),
                           ),
-
                           const SizedBox(height: 24),
-
-                          // Remaining Section
                           Text(
                             "Remaining",
                             style: TextStyle(
@@ -161,12 +123,39 @@ class PrayNowScreen extends ConsumerWidget {
               ],
             ),
 
+            const SizedBox(height: 24),
+
+            // ✅ Account dropdown (taller)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: theme.dividerColor),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.account_circle_outlined, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      "Current Account",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: theme.colorScheme.onSurface.withAlpha(178),
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.arrow_drop_down, size: 20),
+                ],
+              ),
+            ),
+
             const Spacer(),
 
             // Control Buttons
             Column(
               children: [
-                // Start/End Session Buttons
                 Row(
                   children: [
                     Expanded(
@@ -220,10 +209,7 @@ class PrayNowScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 16),
-
-                // Secondary Buttons Row
                 Row(
                   children: [
                     Expanded(
@@ -234,9 +220,7 @@ class PrayNowScreen extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        onPressed: () {
-                          // Handle Break
-                        },
+                        onPressed: () {},
                         icon: const Icon(Icons.free_breakfast_outlined, size: 20),
                         label: const Text("Break"),
                       ),
@@ -250,9 +234,7 @@ class PrayNowScreen extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        onPressed: () {
-                          // Handle Clock Out
-                        },
+                        onPressed: () {},
                         icon: const Icon(Icons.logout_outlined, size: 20),
                         label: const Text("Clock Out"),
                       ),
