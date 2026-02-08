@@ -16,19 +16,30 @@ class PrayNowScreen extends ConsumerWidget {
 
     final selectedAccountName = controller.currentProject.name;
 
-    // ✅ Total prayed time for selected project (sum of saved sessions)
+    // Total prayed time for selected project (sum of saved sessions)
     final totalTimePrayed = controller.currentProject.total;
 
-    // (keep current 60-min ring logic for now — we’ll change this in step #2)
-    const totalSession = Duration(minutes: 60);
+    // ✅ Ring loops every 60 minutes
+    const cycle = Duration(seconds: 60); // TEMP test cycle
+
     final elapsed = session.elapsed;
-
     final elapsedSeconds = elapsed.inSeconds;
-    final totalSeconds = totalSession.inSeconds;
+    final cycleSeconds = cycle.inSeconds;
 
-    final progress = totalSeconds == 0
+    // which cycle are we currently in? (0,1,2,...)
+    final cycleIndex = cycleSeconds == 0 ? 0 : (elapsedSeconds ~/ cycleSeconds);
+
+    // progress inside the current cycle (0..cycleSeconds)
+    final cycleElapsedSeconds =
+        cycleSeconds == 0 ? 0 : (elapsedSeconds % cycleSeconds);
+
+    final progress = cycleSeconds == 0
         ? 0.0
-        : (elapsedSeconds / totalSeconds).clamp(0.0, 1.0);
+        : (cycleElapsedSeconds / cycleSeconds).clamp(0.0, 1.0);
+
+    // ✅ Alternate ring color each cycle
+    final ringColor =
+        (cycleIndex % 2 == 0) ? theme.colorScheme.primary : theme.colorScheme.secondary;
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -79,14 +90,13 @@ class PrayNowScreen extends ConsumerWidget {
                   children: [
                     ProgressRing(
                       progress: progress,
-                      color: theme.colorScheme.primary,
+                      color: ringColor,
                       backgroundColor: theme.dividerColor.withAlpha(77),
                       strokeWidth: 12.0,
                     ),
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // ✅ 1) "Elapsed" -> "Praying Now"
                         Text(
                           "Praying Now",
                           style: TextStyle(
@@ -98,11 +108,12 @@ class PrayNowScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          _formatDuration(elapsed),
+                          // keep current format (shows hours only when needed)
+                          _formatDurationFlexible(elapsed),
                           style: TextStyle(
                             fontSize: 40,
                             fontWeight: FontWeight.w700,
-                            color: theme.colorScheme.primary,
+                            color: ringColor,
                             height: 1.0,
                           ),
                           textAlign: TextAlign.center,
@@ -116,7 +127,7 @@ class PrayNowScreen extends ConsumerWidget {
 
             const SizedBox(height: 18),
 
-            // ✅ 1) "Remaining" section becomes "Total Time Prayed"
+            // Total time prayed for selected project
             Text(
               "Total Time Prayed",
               textAlign: TextAlign.center,
@@ -128,7 +139,8 @@ class PrayNowScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              _formatDuration(totalTimePrayed),
+              // ✅ Always HH:MM:SS even when hours = 00
+              _formatDurationHhMmSs(totalTimePrayed),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 22,
@@ -285,15 +297,24 @@ class PrayNowScreen extends ConsumerWidget {
     );
   }
 
-  String _formatDuration(Duration d) {
-    final hours = d.inHours.toString().padLeft(2, '0');
+  // Shows MM:SS, but switches to HH:MM:SS once hours > 0
+  String _formatDurationFlexible(Duration d) {
+    final hours = d.inHours;
     final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
 
-    if (d.inHours > 0) {
-      return "$hours:$minutes:$seconds";
-    } else {
-      return "$minutes:$seconds";
+    if (hours > 0) {
+      final hh = hours.toString().padLeft(2, '0');
+      return "$hh:$minutes:$seconds";
     }
+    return "$minutes:$seconds";
+  }
+
+  // Always HH:MM:SS (even when hours = 00)
+  String _formatDurationHhMmSs(Duration d) {
+    final hh = d.inHours.toString().padLeft(2, '0');
+    final mm = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final ss = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return "$hh:$mm:$ss";
   }
 }
