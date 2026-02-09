@@ -22,7 +22,7 @@ class BankScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              // ✅ New Project button
+              // ✅ New Account button (same logic)
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -35,11 +35,11 @@ class BankScreen extends ConsumerWidget {
                         String tempName = "";
 
                         return AlertDialog(
-                          title: const Text("New Project"),
+                          title: const Text("New Account"),
                           content: TextField(
                             autofocus: true,
                             decoration: const InputDecoration(
-                              hintText: "Enter project name",
+                              hintText: "Enter account name",
                             ),
                             onChanged: (value) => tempName = value,
                           ),
@@ -61,7 +61,7 @@ class BankScreen extends ConsumerWidget {
                       controller.createProject(name.trim());
                     }
                   },
-                  child: const Text("+ New Project"),
+                  child: const Text("+ New Account"),
                 ),
               ),
 
@@ -69,7 +69,7 @@ class BankScreen extends ConsumerWidget {
 
               Expanded(
                 child: session.projects.isEmpty
-                    ? const Center(child: Text('No projects yet.'))
+                    ? const Center(child: Text('No accounts yet.'))
                     : ListView.separated(
                         itemCount: session.projects.length,
                         separatorBuilder: (context, index) =>
@@ -82,8 +82,7 @@ class BankScreen extends ConsumerWidget {
                           return Card(
                             child: ListTile(
                               title: Text(project.name),
-                              subtitle:
-                                  Text('Total: ${_formatDuration(project.total)}'),
+                              subtitle: Text('Total: ${_formatDuration(project.total)}'),
                               trailing: isSelected
                                   ? const Icon(Icons.check_circle)
                                   : const Icon(Icons.chevron_right),
@@ -94,7 +93,6 @@ class BankScreen extends ConsumerWidget {
                                     builder: (_) => ProjectDetailScreen(projectId: project.id),
                                   ),
                                 );
-
                               },
                             ),
                           );

@@ -10,12 +10,19 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionProvider);
-    final controller = ref.read(sessionProvider.notifier);
 
-    final currentProject = session.projects.firstWhere(
-      (p) => p.id == session.selectedProjectId,
-      orElse: () => session.projects.first,
-    );
+    final hasAccounts = session.projects.isNotEmpty;
+
+    final currentProject = hasAccounts
+        ? session.projects.firstWhere(
+            (p) => p.id == session.selectedProjectId,
+            orElse: () => session.projects.first,
+          )
+        : null;
+
+    // Compute totals safely (no dependency on controller.todayTotal/weekTotal)
+    final todayTotal = _computeTodayTotal(session);
+    final weekTotal = _computeWeekTotal(session);
 
     return Scaffold(
       appBar: AppBar(
@@ -43,7 +50,6 @@ class HomeScreen extends ConsumerWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-
               const SizedBox(height: 16),
 
               Card(
@@ -55,36 +61,42 @@ class HomeScreen extends ConsumerWidget {
                       const Text("Today"),
                       const SizedBox(height: 4),
                       Text(
-                        _formatDuration(controller.todayTotal),
+                        _formatDuration(todayTotal),
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-
                       const SizedBox(height: 16),
 
                       const Text("This Week"),
                       const SizedBox(height: 4),
                       Text(
-                        _formatDuration(controller.weekTotal),
+                        _formatDuration(weekTotal),
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-
                       const SizedBox(height: 16),
 
-                      const Text("Current Project"),
+                      const Text("Current Account"),
                       const SizedBox(height: 4),
                       Text(
-                        _formatDuration(currentProject.total),
+                        hasAccounts ? _formatDuration(currentProject!.total) : "0h 0m",
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
+
+                      if (!hasAccounts) ...[
+                        const SizedBox(height: 10),
+                        const Text(
+                          "No accounts yet. Create one in Bank.",
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -94,13 +106,55 @@ class HomeScreen extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/pray'),
+        onPressed: () {
+          if (!hasAccounts) {
+            // Send them to Bank to create an account
+            context.push('/bank');
+            return;
+          }
+          context.push('/pray');
+        },
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
         child: const Icon(Icons.play_arrow),
       ),
     );
+  }
+
+  Duration _computeTodayTotal(SessionState session) {
+    final now = DateTime.now();
+    var total = Duration.zero;
+
+    for (final p in session.projects) {
+      for (final s in p.sessions) {
+        if (s.date.year == now.year && s.date.month == now.month && s.date.day == now.day) {
+          total += s.duration;
+        }
+      }
+    }
+
+    return total;
+  }
+
+  Duration _computeWeekTotal(SessionState session) {
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1)); // Mon 00:00-ish
+    var total = Duration.zero;
+
+    for (final p in session.projects) {
+      for (final s in p.sessions) {
+        if (s.date.isAfter(startOfWeek) || _isSameDay(s.date, startOfWeek)) {
+          total += s.duration;
+        }
+      }
+    }
+
+    return total;
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
   String _formatDuration(Duration d) {
