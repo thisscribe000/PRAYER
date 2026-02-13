@@ -3,7 +3,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/bank/presentation/bank_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
+import '../../features/insights/presentation/insights_screen.dart';
 import '../../features/invite/presentation/invite_screen.dart';
+import '../../features/notes/presentation/notes_screen.dart';
 import '../../features/rooms/presentation/rooms_screen.dart';
 import '../../features/session/presentation/pray_now_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
@@ -20,6 +22,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/bank', builder: (c, s) => const BankScreen()),
           GoRoute(path: '/rooms', builder: (c, s) => const RoomsScreen()),
           GoRoute(path: '/invite', builder: (c, s) => const InviteScreen()),
+          GoRoute(path: '/insights', builder: (c, s) => const InsightsScreen()),
+          GoRoute(path: '/notes', builder: (c, s) => const NotesScreen()),
           GoRoute(path: '/settings', builder: (c, s) => const SettingsScreen()),
         ],
       ),
